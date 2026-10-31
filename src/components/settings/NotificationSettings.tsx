@@ -37,7 +37,8 @@ import {
   serverSupportsEmailPush,
   setStoredRelayBaseUrl,
   enablePushFromSettings,
-  getStoredPushTransport,
+  getEffectivePushTransport,
+  isFcmSupported,
   setStoredPushTransport,
   type PushAccountState,
   type PushDevice,
@@ -113,8 +114,9 @@ export function NotificationSettings() {
   const supported = isPushSupported();
   const inboxOnlyAvailable = supported && !!client && serverSupportsEmailPush();
   const upSupported = isUnifiedPushSupported();
+  const fcmSupported = isFcmSupported();
   const [relayUrl, setRelayUrl] = useState(DEFAULT_RELAY_BASE_URL);
-  const [transport, setTransport] = useState<PushTransport>('fcm');
+  const [transport, setTransport] = useState<PushTransport>(fcmSupported ? 'fcm' : 'unifiedpush');
   const [distributors, setDistributors] = useState<string[]>([]);
   const [savedDistributor, setSavedDistributor] = useState<string | null>(null);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -151,11 +153,11 @@ export function NotificationSettings() {
       if (stored) setRelayUrl(stored);
       setPushEnabled(enabled);
       setPushStatus(enabled ? { kind: 'enabled' } : { kind: 'idle' });
-      const storedTransport = await getStoredPushTransport();
+      const effectiveTransport = await getEffectivePushTransport();
       const upDistributors = upSupported ? await getUnifiedPushDistributors() : [];
       const upSaved = upSupported ? await getSavedUnifiedPushDistributor() : null;
       if (cancelled) return;
-      setTransport(storedTransport ?? 'fcm');
+      setTransport(effectiveTransport);
       setDistributors(upDistributors);
       setSavedDistributor(upSaved);
     })();
@@ -373,7 +375,7 @@ export function NotificationSettings() {
           </Text>
         )}
 
-        {upSupported && (
+        {(upSupported || fcmSupported) && (
           <>
             <SettingItem
               label={t('settings.notifications.push.transport_label', 'Delivery method')}
@@ -383,14 +385,16 @@ export function NotificationSettings() {
               )}
             >
               <View style={styles.row}>
-                <Button
-                  variant={transport === 'fcm' ? 'default' : 'outline'}
-                  size="sm"
-                  onPress={() => void handleSelectTransport('fcm')}
-                  disabled={busy}
-                >
-                  {t('settings.notifications.push.transport_fcm', 'Google (FCM)')}
-                </Button>
+                {fcmSupported && (
+                  <Button
+                    variant={transport === 'fcm' ? 'default' : 'outline'}
+                    size="sm"
+                    onPress={() => void handleSelectTransport('fcm')}
+                    disabled={busy}
+                  >
+                    {t('settings.notifications.push.transport_fcm', 'Firebase (FCM)')}
+                  </Button>
+                )}
                 <Button
                   variant={transport === 'unifiedpush' ? 'default' : 'outline'}
                   size="sm"
@@ -439,7 +443,7 @@ export function NotificationSettings() {
           label={t('settings.notifications.push.relay_label', 'Push relay')}
           description={t(
             'settings.notifications.push.relay_desc_mobile',
-            'The server that delivers your notifications. Defaults to the hosted Bulwark relay; change only if you self-host. Must use https.',
+            'The HTTPS endpoint of your organization's IRISA push relay. Ask your administrator for the address.',
           )}
           noBorder
         >
