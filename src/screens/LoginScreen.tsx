@@ -89,6 +89,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
   const login = useAuthStore((state) => state.login);
   const loginWithToken = useAuthStore((state) => state.loginWithToken);
   const loginViaWebmail = useAuthStore((state) => state.loginViaWebmail);
+  const loginViaOAuth = useAuthStore((state) => state.loginViaOAuth);
   const loginViaOrganizationOidc = useAuthStore((state) => state.loginViaOrganizationOidc);
   const loginViaPairing = useAuthStore((state) => state.loginViaPairing);
   const clearError = useAuthStore((state) => state.clearError);
@@ -347,10 +348,13 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
       setBusy('browser');
       const wasAuthenticated = useAuthStore.getState().isAuthenticated;
       try {
-        await loginViaWebmail(target, { addAccount: isAddMode, signal: attempt.signal });
-        if (!isLive(attempt)) return;
-        // loginViaWebmail resolves quietly when the user closes the browser —
-        // that's a cancellation, not a failure, so leave them where they were.
+        const signedIn = organization
+          ? await loginViaOAuth(target, { addAccount: isAddMode, signal: attempt.signal })
+          : (await loginViaWebmail(target, { addAccount: isAddMode, signal: attempt.signal }), true);
+        if (!isLive(attempt) || !signedIn) return;
+        // A managed organization uses its configured server's own OAuth
+        // endpoint; do not accept a webmail handoff that can redirect JMAP
+        // authentication to an arbitrary host.
         finishIfSignedIn(wasAuthenticated);
       } catch (err) {
         if (!isLive(attempt) || isSignInCancelled(err)) return;
@@ -361,7 +365,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
         if (endAttempt(attempt)) setBusy(null);
       }
     },
-    [beginAttempt, continueWithSecondFactor, endAttempt, finishIfSignedIn, isAddMode, loginViaWebmail, t],
+    [beginAttempt, continueWithSecondFactor, endAttempt, finishIfSignedIn, isAddMode, loginViaOAuth, loginViaWebmail, organization, t],
   );
 
   const handleEmailContinue = React.useCallback(async () => {
