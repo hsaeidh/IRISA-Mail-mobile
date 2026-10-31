@@ -651,7 +651,7 @@ export function isFcmSupported(): boolean {
 
 /** The first-run prompt is shown only when a configured relay and native transport exist. */
 export function isPushOnboardingSupported(): boolean {
-  return !!DEFAULT_RELAY_BASE_URL && (Platform.OS === 'ios' || getNative() !== null);
+  return !!DEFAULT_RELAY_BASE_URL && isPushSupported();
 }
 
 /** True on platforms that have a push transport wired up: FCM or UnifiedPush on Android, APNs on iOS. */
