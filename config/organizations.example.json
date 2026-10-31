@@ -29,7 +29,8 @@
         "enabled": true,
         "allowedOrigins": [
           "https://mail.example.invalid"
-        ]
+        ],
+        "resourceOrigins": []
       },
       "brandingKey": "irisa"
     }
