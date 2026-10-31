@@ -174,6 +174,7 @@ module.exports = {
       apnsEnvironment: APS_ENVIRONMENT === 'development' ? 'sandbox' : 'production',
       irisaOrganizations: IRISA_ORGANIZATIONS,
       fcmEnabled: HAS_ANDROID_GOOGLE_SERVICES,
+      irisaPushRelayUrl: process.env.IRISA_PUSH_RELAY_URL || '',
     },
   },
 };
