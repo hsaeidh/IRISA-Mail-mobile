@@ -193,6 +193,24 @@ describe('JMAPClient', () => {
       expect(client.isConnected).toBe(false);
     });
 
+    it('rewrites internal HTTP session hosts before managed authenticated requests', async () => {
+      global.fetch = mockFetch([{
+        status: 200,
+        json: {
+          ...TOKEN_SESSION,
+          apiUrl: 'http://localhost:8080/jmap/api/',
+          downloadUrl: 'http://localhost:8080/jmap/download/{accountId}/{blobId}',
+          uploadUrl: 'http://stalwart:8080/jmap/upload/{accountId}',
+        },
+      }]) as any;
+
+      const { session } = await client.connectWithToken('https://mail.example.com', 'my-token', []);
+
+      expect(session.apiUrl).toBe('https://mail.example.com/jmap/api/');
+      expect(session.downloadUrl).toBe('https://mail.example.com/jmap/download/{accountId}/{blobId}');
+      expect(session.uploadUrl).toBe('https://mail.example.com/jmap/upload/{accountId}');
+    });
+
     it('accepts explicitly configured resource origins for managed organization sessions', async () => {
       const externalResourceSession = {
         ...TOKEN_SESSION,
