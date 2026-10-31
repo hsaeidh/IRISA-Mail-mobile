@@ -72,7 +72,7 @@ jobs:
             if [ -z "$NSE_PROFILE" ]; then
               # The notification service extension (plugins/ios-push) is its
               # own App ID and needs its own App Store profile.
-              echo "::error::IOS_NSE_PROVISIONING_PROFILE_BASE64 is not set: the notification extension (org.bulwarkmail.mobile.NotificationService) can't be signed."
+              echo "::error::IOS_NSE_PROVISIONING_PROFILE_BASE64 is not set: the notification extension (ir.irisa.mail.NotificationService) can't be signed."
               exit 1
             fi
             echo "signed=true" >> "$GITHUB_OUTPUT"
@@ -123,6 +123,7 @@ jobs:
 
       - name: Generate the iOS project
         env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           # plugins/ios-push names each target's profile: the command line
           # can't, it would give every target the same one.
           IOS_APP_PROFILE: ${{ steps.profiles.outputs.app_uuid }}
@@ -209,7 +210,7 @@ jobs:
             -scheme "${{ steps.xcode.outputs.scheme }}" \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/Bulwark.xcarchive" \
+            -archivePath "$RUNNER_TEMP/IRISAMail.xcarchive" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             CODE_SIGN_IDENTITY="Apple Distribution"
@@ -260,13 +261,13 @@ jobs:
           PLIST
 
           xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/Bulwark.xcarchive" \
+            -archivePath "$RUNNER_TEMP/IRISAMail.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
 
           VERSION=$(cat VERSION | tr -d '[:space:]')
           SRC=$(ls "$RUNNER_TEMP"/export/*.ipa | head -1)
-          DEST="bulwark-mobile-${VERSION}-${GITHUB_SHA::7}.ipa"
+          DEST="irisa-mail-${VERSION}-${GITHUB_SHA::7}.ipa"
           cp "$SRC" "$DEST"
           echo "path=$DEST" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -300,9 +301,8 @@ jobs:
           echo "done=true" >> "$GITHUB_OUTPUT"
           echo "::notice::Uploaded build ${IOS_BUILD_NUMBER} to App Store Connect. Processing usually takes 5-30 minutes before it appears in TestFlight."
 
-  # Puts the upload on the public TestFlight link (README): waits for App Store
-  # Connect to process it, adds it to the external group and submits it for
-  # beta review. On Linux, because most of this job is waiting.
+  # Optional external TestFlight distribution. Configure the IRISA external
+  # tester group in App Store Connect before enabling this workflow job.
   public-testflight:
     needs: build
     if: needs.build.outputs.uploaded == 'true'
