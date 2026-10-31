@@ -467,6 +467,13 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
     }
     try {
       const tenantConfig = getOrganizationConfig();
+      if (tenantConfig && !tenantConfig.fallback?.allowManualServerEntry && !isEmailAddress(email.trim())) {
+        setNotice({
+          title: t('login.mobile.organization_email_required', 'Enter your organization email address'),
+          detail: t('login.mobile.organization_email_required_detail', 'Manual server sign-in is disabled for this IRISA build.'),
+        });
+        return;
+      }
       if (tenantConfig && isEmailAddress(email.trim())) {
         const resolved = resolveOrganization(email.trim(), tenantConfig);
         if (resolved.ok) {
