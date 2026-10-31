@@ -60,6 +60,10 @@ vi.mock('react-native', () => {
   };
 });
 
+vi.mock('expo-constants', () => ({
+  default: { expoConfig: { name: 'IRISA Mail', version: '0.0.0', extra: {} } },
+}));
+
 vi.mock('expo-secure-store', () => ({
   setItemAsync: vi.fn(async () => undefined),
   getItemAsync: vi.fn(async () => null),
