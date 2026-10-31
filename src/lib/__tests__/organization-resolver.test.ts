@@ -124,7 +124,8 @@ describe('organization resolver', () => {
 
   it('allows only exact configured HTTPS JMAP origins', () => {
     const msc = config.organizations[0];
-    expect(isAllowedJmapOrigin('https://email.msc.example/jmap/session', msc)).toBe(true);
+    expect(isAllowedJmapOrigin('https://email.msc.example/', msc)).toBe(true);
+    expect(isAllowedJmapOrigin('https://email.msc.example/jmap/session', msc)).toBe(false);
     expect(isAllowedJmapOrigin('https://email.msc.example.evil.test', msc)).toBe(false);
     expect(isAllowedJmapOrigin('http://email.msc.example', msc)).toBe(false);
     expect(isAllowedJmapOrigin('https://other.msc.example', msc)).toBe(false);
