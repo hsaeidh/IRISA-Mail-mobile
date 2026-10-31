@@ -179,6 +179,38 @@ describe('JMAPClient', () => {
       expect(session.uploadUrl).toBe('https://api.fastmail.com/jmap/upload/{accountId}/');
     });
 
+    it('rejects external resource hosts for managed organization sessions unless explicitly allowed', async () => {
+      const externalResourceSession = {
+        ...TOKEN_SESSION,
+        apiUrl: 'https://api.fastmail.com/jmap/api/',
+        downloadUrl: 'https://www.fastmailusercontent.com/jmap/download/{accountId}/{blobId}/{name}?type={type}',
+        uploadUrl: 'https://api.fastmail.com/jmap/upload/{accountId}/',
+      };
+      global.fetch = mockFetch([{ status: 200, json: externalResourceSession }]) as any;
+
+      await expect(client.connectWithToken('https://api.fastmail.com', 'my-token', []))
+        .rejects.toThrow('JMAP session downloadUrl uses an origin that is not allowed');
+      expect(client.isConnected).toBe(false);
+    });
+
+    it('accepts explicitly configured resource origins for managed organization sessions', async () => {
+      const externalResourceSession = {
+        ...TOKEN_SESSION,
+        apiUrl: 'https://api.fastmail.com/jmap/api/',
+        downloadUrl: 'https://www.fastmailusercontent.com/jmap/download/{accountId}/{blobId}/{name}?type={type}',
+        uploadUrl: 'https://api.fastmail.com/jmap/upload/{accountId}/',
+      };
+      global.fetch = mockFetch([{ status: 200, json: externalResourceSession }]) as any;
+
+      const { session } = await client.connectWithToken(
+        'https://api.fastmail.com',
+        'my-token',
+        ['https://www.fastmailusercontent.com'],
+      );
+
+      expect(session.downloadUrl).toBe(externalResourceSession.downloadUrl);
+    });
+
     it('still moves self-reported internal hosts onto the server address', async () => {
       global.fetch = mockFetch([{
         status: 200,
