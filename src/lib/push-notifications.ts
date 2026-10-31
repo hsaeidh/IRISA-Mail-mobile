@@ -203,7 +203,10 @@ export async function migrateLegacyPushKeys(): Promise<void> {
 // IRISA does not use the upstream Bulwark relay. Set this to the organization's
 // own relay in a deployment build only after its endpoint is provisioned.
 // Empty means push remains disabled until an administrator supplies an endpoint.
-export const DEFAULT_RELAY_BASE_URL = '';
+const appExtra = Constants.expoConfig?.extra as { irisaPushRelayUrl?: unknown } | undefined;
+export const DEFAULT_RELAY_BASE_URL = typeof appExtra?.irisaPushRelayUrl === 'string'
+  ? appExtra.irisaPushRelayUrl.trim()
+  : '';
 
 /**
  * A relay must be reachable over TLS: the registration carries the FCM token
