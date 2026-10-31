@@ -361,7 +361,9 @@ export class JMAPClient {
       if (err instanceof LoginEndpointMissingError) {
         this.assertCurrentSession(epoch);
         // Pre-0.16 Stalwart: TOTP rides along in the Basic password.
-        return this.connect(baseUrl, username, `${password}${totp}`, undefined, signal, allowedResourceOrigins);
+        return allowedResourceOrigins !== undefined
+          ? this.connect(baseUrl, username, `${password}${totp}`, undefined, signal, allowedResourceOrigins)
+          : this.connect(baseUrl, username, `${password}${totp}`, undefined, signal);
       }
       throw err;
     }
