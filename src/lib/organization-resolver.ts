@@ -56,6 +56,18 @@ function normalizedEmailDomain(email: string): string | null {
   return match ? toAsciiDomain(match[1]) : null;
 }
 
+function normalizedIssuerUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const raw = value.trim();
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) return null;
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
 function normalizedHttpsUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {
@@ -114,7 +126,7 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
       throw new Error(`Organization ${key} must explicitly enable or disable each provider`);
     }
 
-    const issuer = oidc.enabled ? normalizedHttpsUrl(oidc.issuer) : null;
+    const issuer = oidc.enabled ? normalizedIssuerUrl(oidc.issuer) : null;
     const clientId = typeof oidc.clientId === 'string' ? oidc.clientId.trim() : '';
     const redirectUri = typeof oidc.redirectUri === 'string' ? oidc.redirectUri.trim() : '';
     const logoutRedirectUri = typeof oidc.logoutRedirectUri === 'string' ? oidc.logoutRedirectUri.trim() : '';
