@@ -57,7 +57,7 @@ building; see [iOS release](docs/ios-release.md).
 
 The `upstream-sync` branch mirrors `bulwarkmail/native` and must remain free
 of IRISA-specific changes. IRISA implementation work belongs on
-`development`; production releases are promoted to `main) only after review
+`development`; production releases are promoted to `main` only after review
 and verification.
 
 ## License
