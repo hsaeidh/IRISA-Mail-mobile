@@ -349,7 +349,11 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
       const wasAuthenticated = useAuthStore.getState().isAuthenticated;
       try {
         const signedIn = organization
-          ? await loginViaOAuth(target, { addAccount: isAddMode, signal: attempt.signal })
+          ? await loginViaOAuth(target, {
+              addAccount: isAddMode,
+              signal: attempt.signal,
+              jmapResourceOrigins: organization.jmap.resourceOrigins ?? [],
+            })
           : (await loginViaWebmail(target, { addAccount: isAddMode, signal: attempt.signal }), true);
         if (!isLive(attempt) || !signedIn) return;
         // A managed organization uses its configured server's own OAuth
@@ -444,7 +448,11 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
       setBusy('browser');
       const wasAuthenticated = useAuthStore.getState().isAuthenticated;
       try {
-        const signedIn = await loginViaOrganizationOidc(target, oidc, { addAccount: isAddMode, signal: attempt.signal });
+        const signedIn = await loginViaOrganizationOidc(target, oidc, {
+          addAccount: isAddMode,
+          signal: attempt.signal,
+          jmapResourceOrigins: organization?.jmap.resourceOrigins ?? [],
+        });
         if (!isLive(attempt) || !signedIn) return;
         finishIfSignedIn(wasAuthenticated);
       } catch (err) {
@@ -457,7 +465,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
         if (endAttempt(attempt)) setBusy(null);
       }
     },
-    [beginAttempt, endAttempt, finishIfSignedIn, isAddMode, loginViaOrganizationOidc, t],
+    [beginAttempt, endAttempt, finishIfSignedIn, isAddMode, loginViaOrganizationOidc, organization, t],
   );
 
   const handleServerContinue = React.useCallback(() => {
@@ -529,7 +537,11 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
       setBusy('connecting');
       const wasAuthenticated = useAuthStore.getState().isAuthenticated;
       try {
-        await loginWithToken(target, accessToken, { addAccount: isAddMode, signal: attempt.signal });
+        await loginWithToken(target, accessToken, {
+          addAccount: isAddMode,
+          signal: attempt.signal,
+          ...(organization ? { jmapResourceOrigins: organization.jmap.resourceOrigins ?? [] } : {}),
+        });
         if (!isLive(attempt)) return;
         finishIfSignedIn(wasAuthenticated);
       } catch (err) {
@@ -560,6 +572,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
         addAccount: isAddMode,
         totp: totpRequired ? totp.trim() : undefined,
         signal: attempt.signal,
+        ...(organization ? { jmapResourceOrigins: organization.jmap.resourceOrigins ?? [] } : {}),
       });
       if (!isLive(attempt)) return;
       finishIfSignedIn(wasAuthenticated);
