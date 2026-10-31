@@ -29,9 +29,11 @@ integration must be tested against the actual IRISA Stalwart deployment.
 
 ## WSO2 application setup
 
-Create the OIDC application in the WSO2 organization whose issuer is placed in
-the configuration (for the current root-organization design, use the root
-organization's application).
+Create the OIDC application in the WSO2 root organization. Share it with all
+mail-enabled child organizations (or the explicitly selected organizations)
+so their users are permitted to use the app. For the enhanced organization
+authentication model, verify that **Enhanced Organization Authentication**
+is enabled in the application's Shared Access tab.
 
 Configure:
 
@@ -59,7 +61,7 @@ using the legacy Organization SSO federated authenticator, set
 `fidp=OrganizationSSO`. Do not enable this flag for the enhanced model unless
 the WSO2 authentication flow is configured for the legacy authenticator.
 
-The configured issuer must be the exact value returned by WSO2 discovery. A
+The configured issuer must be the exact value returned by WSO2 discovery. The authorization endpoint returned by discovery must be the root-organization endpoint for the enhanced organization model; the app does not synthesize or rewrite it. A
 typical WSO2 Identity Server issuer has the form
 `https://identity.example.org/oauth2/token`, and its discovery document is
 at `https://identity.example.org/oauth2/token/.well-known/openid-configuration`.
@@ -124,6 +126,7 @@ IRISA_ORGANIZATIONS_CONFIG=config/organizations.json npx expo run:android
 
 ## References
 
+- [Register a mobile app](https://is.docs.wso2.com/en/latest/guides/applications/register-mobile-app/)
 - [WSO2 IS 7.3 OIDC discovery](https://is.docs.wso2.com/en/latest/guides/authentication/oidc/discover-oidc-configs/)
 - [Register a mobile app](https://is.docs.wso2.com/en/latest/guides/applications/register-mobile-app/)
 - [WSO2 IS organization discovery](https://is.docs.wso2.com/en/latest/guides/organization-management/organization-discovery/organization-discovery/)
