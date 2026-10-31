@@ -1387,12 +1387,13 @@
         "shared_mailboxes_no_push": "صندوق‌های پستی که دیگران با شما به اشتراک می‌گذارند اعلان پس‌زمینه ارسال نمی‌کنند.",
         "status_android_only": "اعلان‌های پس‌زمینه فقط در Android در دسترس است.",
         "transport_desc": "نحوه رسیدن اعلان‌ها به این دستگاه: Firebase Cloud Messaging گوگل، یا یک برنامه توزیع‌کننده UnifiedPush (مانند ntfy) برای تحویل بدون Google.",
+        "transport_desc_unified": "برای تحویل اعلان بدون وابستگی به Google از یک برنامه توزیع‌کننده سازگار با UnifiedPush استفاده کنید.",
         "transport_fcm": "Google (FCM)",
         "transport_label": "روش تحویل",
         "transport_unifiedpush": "UnifiedPush",
         "up_distributor_desc": "چند برنامه توزیع‌کننده UnifiedPush نصب است - برنامه‌ای را که باید اعلان‌ها را تحویل دهد انتخاب کنید.",
         "up_distributor_label": "توزیع‌کننده",
-        "up_no_distributor": "هیچ برنامه توزیع‌کننده UnifiedPush روی این دستگاه نصب نیست. یکی (مثلاً ntfy) نصب کنید و دوباره امتحان کنید."
+        "up_no_distributor": "استفاده از UnifiedPush به یک برنامه توزیع‌کننده جداگانه و سازگار (برای مثال ntfy) نیاز دارد. این گزینه اختیاری است."
       }
     },
     "offline": {
