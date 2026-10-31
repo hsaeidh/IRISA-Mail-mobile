@@ -86,7 +86,7 @@ describe('organization resolver', () => {
         oidc: { enabled: true, issuer: 'http://identity.example', organizationHandle: 'bad', clientId: 'x', redirectUri: 'ir.irisa.mail:/oauth/callback' },
         jmap: { enabled: false, allowedOrigins: [] },
       }],
-    })).toThrow(/incomplete or insecure OIDC/);
+    })).toThrow(/incomplete OIDC settings/);
   });
 
   it('rejects client secrets in mobile organization configuration', () => {
