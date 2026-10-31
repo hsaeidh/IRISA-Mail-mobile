@@ -7,7 +7,7 @@
  */
 import { toAsciiDomain } from './idn';
 
-const EMAIL_WITH_DOMAIN_RE = /^[^\s@]+@([^\s@]+\\.[^\s@]+)$/;
+const EMAIL_WITH_DOMAIN_RE = /^[^\s@]+@([^\s@]+\.[^\s@]+)$/;
 
 export interface OrganizationOidcConfig {
   enabled: boolean;
