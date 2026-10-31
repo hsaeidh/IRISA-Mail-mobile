@@ -215,10 +215,10 @@ struct InboxWidgetView: View {
       }
     } else {
       VStack(alignment: .leading, spacing: 6) {
-        Text("Bulwark Mail")
+        Text("IRISA Mail")
           .font(.system(size: 15, weight: .semibold))
           .foregroundColor(palette.foreground)
-        Text(entry.snapshot?.strings.signedOut ?? "Open Bulwark to load your inbox.")
+        Text(entry.snapshot?.strings.signedOut ?? "Open IRISA Mail to load your inbox.")
           .font(.system(size: 13))
           .foregroundColor(palette.muted)
       }
