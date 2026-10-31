@@ -946,6 +946,8 @@
       "organization_config_invalid": "Organization sign-in is not configured correctly",
       "organization_email_required": "Enter your organization email address",
       "organization_email_required_detail": "Manual server sign-in is disabled for this IRISA build.",
+      "organization_pairing_disabled": "Use your organization email to sign in",
+      "organization_pairing_disabled_detail": "Pairing and server handoff links are disabled in this managed IRISA build.",
       "organization_server_missing": "Your organization mail server is not configured",
       "organization_server_missing_detail": "Contact your organization administrator.",
       "organization_server_not_allowed": "This server is not approved for your organization",
