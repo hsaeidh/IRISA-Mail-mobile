@@ -28,6 +28,9 @@ The organization map must be explicit. Never derive an issuer, OAuth client, org
 ### WSO2 OIDC
 
 - Use Authorization Code Flow with PKCE (S256).
+- Resolve the email domain against the bundled allow-list before opening the WSO2 authorization page; send the configured `orgId` (preferred) or `orgHandle` to the root-organization authorization endpoint.
+- Load discovery only from the configured HTTPS issuer, require exact issuer equality, and restrict authorization/token/JWKS endpoints to that issuer origin.
+- Require and cryptographically validate the RS256 ID token signature through the discovered JWKS, plus issuer, audience, expiry, issue time, and nonce.
 - The mobile app is a public client. Never embed a client secret in the application bundle.
 - Configure one trusted OIDC profile per organization where WSO2 organization routing requires it.
 - Bind each accepted email domain to a preconfigured WSO2 issuer, client ID, redirect URI, and organization identifier/handle.
@@ -46,15 +49,15 @@ The organization map must be explicit. Never derive an issuer, OAuth client, org
 
 ## Organization configuration
 
-The template is `config/organizations.example.json`. It contains only reserved example values/placeholders, never production domains, tenant IDs, or credentials. `src/lib/organization-resolver.ts` validates the schema at runtime when supplied with the deployment configuration and performs exact domain matching.
+The template is `config/organizations.example.json`. A deployment copies it to the ignored `config/organizations.json` and sets `IRISA_ORGANIZATIONS_CONFIG` during the Expo build. `app.config.js` embeds that public routing map in Expo `extra`; `src/lib/irisa-config.ts` validates it at runtime and `src/lib/organization-resolver.ts` performs exact domain matching. No production configuration is committed.
 
 Each organization entry may define:
-- stable internal organization key;
+- stable internal organization key and display name;
 - accepted email domains;
-- WSO2 issuer and organization routing metadata;
-- public OIDC client ID and redirect URI;
-- allowed JMAP origins;
-- optional display name and branding key.
+- WSO2 issuer and organization routing metadata (`orgId` or `orgHandle`);
+- public OIDC client ID, scopes, and exact app redirect URI;
+- allowed JMAP origins (required when external OIDC is enabled);
+- optional legacy WSO2 `fidp=OrganizationSSO` selection and branding key.
 
 Production configuration must be supplied by the build/release environment or a protected deployment configuration. Never commit client secrets, private keys, signing credentials, or user data. The resolver rejects `clientSecret`/`client_secret` fields because a native mobile app is a public OAuth client.
 
@@ -123,11 +126,15 @@ The workflow in `.github/workflows/upstream-sync.yml` provides a manual/schedule
 - [ ] Enable branch protection and required CI checks in GitHub repository settings.
 
 ### Phase 1 — identity and organization routing
-- [x] Implement a pure organization resolver with exact domain allow-list matching, HTTPS issuer/JMAP validation, duplicate-domain rejection, and client-secret rejection. Unit tests are committed; CI execution is pending.
-- [ ] Wire the resolver into the email-first login flow and load protected production organization configuration.
-- [ ] Implement WSO2 OIDC provider and per-organization PKCE configuration (the existing native PKCE flow currently discovers the mail server's own authorization server; it is not yet a WSO2 external-issuer integration).
-- [ ] Integrate direct JMAP login as a separately selectable provider.
-- [ ] Add unit and integration tests for unknown domains, issuer mismatch, account switching, and redirect validation.
+- [x] Implement strict organization resolution with exact domain allow-list matching, HTTPS issuer/JMAP validation, duplicate-domain rejection, and client-secret rejection.
+- [x] Load deployment-specific organization configuration through `IRISA_ORGANIZATIONS_CONFIG`; ignore the local production config file in Git.
+- [x] Route email-first login through the configured organization and use its allow-listed JMAP origin.
+- [x] Add WSO2-compatible Authorization Code + PKCE login with `orgId`/`orgHandle` routing and RS256 ID-token signature/claim/nonce validation.
+- [x] Register the dedicated `ir.irisa.mail:/oauth/callback` scheme in Expo and Android configuration.
+- [x] Add resolver and WSO2 OIDC unit tests; verify final CI result before treating the phase as test-complete.
+- [ ] Verify WSO2 login against the actual IRISA IS 7.3.0 tenant setup and verify Stalwart accepts only the intended WSO2 access-token audience/scopes.
+- [ ] Add end-to-end tenant-isolation, refresh, account-switching, and revocation tests.
+- [ ] Keep direct JMAP password/token sign-in as a separately available path and test its coexistence with organization SSO.
 
 ### Phase 2 — branding and localization
 - [ ] Wire IRISA build-time branding and identifiers through all native targets.
