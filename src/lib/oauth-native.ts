@@ -97,11 +97,32 @@ export async function discoverConfiguredOidcMetadata(issuer: string): Promise<OA
   }
 }
 
+function decodeBase64Url(part: string): Uint8Array {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const base64 = part.replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+  const output: number[] = [];
+  let accumulator = 0;
+  let bits = 0;
+  for (const char of base64) {
+    const value = alphabet.indexOf(char);
+    if (value < 0) throw new HandoffError('Invalid base64url data in OIDC ID token');
+    accumulator = (accumulator << 6) | value;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      output.push((accumulator >> bits) & 0xff);
+      accumulator &= (1 << bits) - 1;
+    }
+  }
+  if (bits >= 6) throw new HandoffError('Invalid base64url data in OIDC ID token');
+  return Uint8Array.from(output);
+}
+
 function decodeJwtPart<T>(part: string): T {
-  const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
-  const bytes = Buffer.from(padded, 'base64');
-  return JSON.parse(bytes.toString('utf8')) as T;
+  const bytes = decodeBase64Url(part);
+  let escaped = '';
+  for (const byte of bytes) escaped += `%${byte.toString(16).padStart(2, '0')}`;
+  return JSON.parse(decodeURIComponent(escaped)) as T;
 }
 
 interface OidcIdTokenClaims {
@@ -161,8 +182,8 @@ async function verifyConfiguredIdToken(
     false,
     ['verify'],
   );
-  const signature = new Uint8Array(Buffer.from(parts[2].replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - parts[2].length % 4) % 4), 'base64'));
-  const signed = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+  const signature = decodeBase64Url(parts[2]);
+  const signed = Uint8Array.from(`${parts[0]}.${parts[1]}`, (char) => char.charCodeAt(0));
   const valid = await cryptoApi.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, key, signature, signed);
   if (!valid) throw new HandoffError('OIDC ID-token signature verification failed');
 
