@@ -4,7 +4,7 @@ import Security
 
 /// Ids and steps only, never credentials or message content. Shared by the
 /// notification extension and the app's push renewal (PushRenewal.swift).
-let pushLog = os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "org.bulwarkmail.mobile", category: "push")
+let pushLog = os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "ir.irisa.mail", category: "push")
 
 /// Items the app shares with this extension through a keychain access group
 /// (BulwarkKeychainGroup in Info.plist). The app writes them with
