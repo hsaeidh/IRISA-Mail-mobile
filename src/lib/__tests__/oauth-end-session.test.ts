@@ -152,11 +152,13 @@ describe('the id token', () => {
     const next = await refreshOAuthAccessToken(tokens({
       tokenEndpoint: 'https://identity.example.org/oauth2/token',
       issuer: 'https://identity.example.org/oauth2/token',
+      externalProvider: true,
       revocationEndpoint: 'https://identity.example.org/oauth2/revoke',
       endSessionEndpoint: 'https://identity.example.org/oidc/logout',
       logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
     }));
     expect(next.idToken).toBe('id.token.sig');
+    expect(next.externalProvider).toBe(true);
     expect(next.revocationEndpoint).toBe('https://identity.example.org/oauth2/revoke');
     expect(next.endSessionEndpoint).toBe('https://identity.example.org/oidc/logout');
     expect(next.logoutRedirectUri).toBe('ir.irisa.mail:/oauth/logout');
