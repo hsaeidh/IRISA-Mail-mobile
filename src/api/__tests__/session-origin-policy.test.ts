@@ -22,11 +22,12 @@ describe('JMAP session origin policy', () => {
     }, server)).not.toThrow();
   });
 
-  it('rejects an API URL that points to another origin', () => {
+  it('allows a different HTTP(S) API origin because the client rewrites apiUrl to the configured server', () => {
     expect(() => validateJmapSessionOrigins({
       ...session,
-      apiUrl: 'https://attacker.test/jmap/session',
-    }, server)).toThrow(JMAPSessionOriginError);
+      apiUrl: 'http://localhost:8080/jmap/session',
+      downloadUrl: 'http://localhost:8080/download',
+    }, server)).not.toThrow();
   });
 
   it('rejects external upload, download and event-source URLs by default', () => {
@@ -45,11 +46,13 @@ describe('JMAP session origin policy', () => {
     }, server, ['https://cdn.msc.test'])).not.toThrow();
   });
 
-  it('rejects insecure, credential-bearing and path-based resource origins', () => {
+  it('rejects non-HTTP session URLs and insecure, credential-bearing or path-based resource origins', () => {
     expect(() => validateJmapSessionOrigins({
       ...session,
-      uploadUrl: 'http://mail.msc.test/upload',
+      uploadUrl: 'javascript:alert(1)',
     }, server)).toThrow(JMAPSessionOriginError);
+    expect(() => validateJmapSessionOrigins(session, server, ['http://cdn.msc.test']))
+      .toThrow(JMAPSessionOriginError);
     expect(() => validateJmapSessionOrigins(session, server, ['https://user:pass@cdn.msc.test']))
       .toThrow(JMAPSessionOriginError);
     expect(() => validateJmapSessionOrigins(session, server, ['https://cdn.msc.test/private']))
