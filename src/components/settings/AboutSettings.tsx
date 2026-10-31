@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { ExternalLink } from '../icons';
 import { SettingsSection, SettingItem } from './settings-section';
 import Button from '../Button';
 import { spacing, radius, typography, type ThemePalette } from '../../theme/tokens';
-import { useColors, useResolvedTheme } from '../../theme/colors';
+import { useColors } from '../../theme/colors';
 import { useLocaleStore } from '../../stores/locale-store';
 import { useAuthStore } from '../../stores/auth-store';
 import { useAccountStore } from '../../stores/account-store';
@@ -15,11 +15,8 @@ import { buildIssueUrl, sourceCodeUrl, updateSourceUrl } from '../../lib/about-l
 import { helpLinks } from '../../lib/org-policy';
 import { usePolicyStore } from '../../stores/policy-store';
 
-const LOGO_WHITE = require('../../../assets/logos/Bulwark Logo White.png');
-const LOGO_COLOR = require('../../../assets/logos/Bulwark Logo Color.png');
-
 const extra = (Constants.expoConfig?.extra ?? {}) as { commit?: string; sourceCodeUrl?: string };
-export const APP_NAME = Constants.expoConfig?.name ?? 'Bulwark';
+export const APP_NAME = Constants.expoConfig?.name ?? 'IRISA Mail';
 export const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 export const GIT_COMMIT = extra.commit ?? 'dev';
 const SOURCE_URL = sourceCodeUrl(extra.sourceCodeUrl);
@@ -49,7 +46,6 @@ const HELP_LINK_LABELS = {
 export function AboutSettings({ onOpen }: AboutSettingsProps) {
   const c = useColors();
   const styles = React.useMemo(() => makeStyles(c), [c]);
-  const scheme = useResolvedTheme();
   const t = useLocaleStore((s) => s.t);
   const operatorLinks = usePolicyStore((s) => s.links);
   const locale = useLocaleStore((s) => s.locale);
@@ -110,13 +106,9 @@ export function AboutSettings({ onOpen }: AboutSettingsProps) {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Image
-          source={scheme === 'dark' ? LOGO_WHITE : LOGO_COLOR}
-          style={styles.logo}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-          accessible={false}
-        />
+        <View style={styles.logo} accessibilityLabel="IRISA Mail">
+          <Text style={styles.logoText}>IR</Text>
+        </View>
         <View style={styles.cardText}>
           <Text style={styles.appName}>{APP_NAME}</Text>
           <Text style={styles.version}>v{APP_VERSION} ({GIT_COMMIT})</Text>
@@ -203,7 +195,8 @@ function makeStyles(c: ThemePalette) {
       borderColor: c.border,
       backgroundColor: c.card,
     },
-    logo: { width: 48, height: 48 },
+    logo: { width: 48, height: 48, borderRadius: 12, backgroundColor: c.textLink, alignItems: 'center', justifyContent: 'center' },
+    logoText: { color: '#ffffff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
     cardText: { flex: 1, minWidth: 0, gap: 3 },
     appName: { fontSize: 16, fontWeight: '600', lineHeight: 22, color: c.text },
     version: { ...typography.caption, fontSize: 13, lineHeight: 18, color: c.mutedForeground },
