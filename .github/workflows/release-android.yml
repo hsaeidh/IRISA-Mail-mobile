@@ -131,10 +131,10 @@ jobs:
       - name: Build release APK
         working-directory: android
         env:
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_STORE_FILE: ${{ steps.key.outputs.store_file }}
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_STORE_FILE: ${{ steps.key.outputs.store_file }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
           ./gradlew assembleGithubRelease --no-daemon
@@ -145,69 +145,10 @@ jobs:
           echo "Using $BUILD_TOOLS"
           echo "$BUILD_TOOLS" >> "$GITHUB_PATH"
 
-      # Optional v3 key rotation away from the debug key that signed every
-      # release up to 0.1.62. Gradle signed the APK with the release key only,
-      # which existing installs reject as a different app. With a lineage the
-      # APK is re-signed so that Android 9+ sees the release key plus proof
-      # that the debug key handed over to it, while Android 7-8.1 (v2 only)
-      # still see the debug key. docs/android-release.md has the details.
-      - name: Apply the signing key rotation
-        id: rotation
-        env:
-          LINEAGE_BASE64: ${{ secrets.ANDROID_SIGNING_LINEAGE_BASE64 }}
-          KEYSTORE: ${{ steps.key.outputs.store_file }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          RELEASE_CERT_SHA256: ${{ steps.key.outputs.cert_sha256 }}
-        run: |
-          set -euo pipefail
-          if [ -z "$LINEAGE_BASE64" ]; then
-            echo "No ANDROID_SIGNING_LINEAGE_BASE64: keeping the release-key-only signature."
-            echo "rotated=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          LINEAGE="$RUNNER_TEMP/signing.lineage"
-          echo "$LINEAGE_BASE64" | base64 -d > "$LINEAGE"
-          apksigner lineage --in "$LINEAGE" --print-certs | tee "$RUNNER_TEMP/lineage.txt"
-
-          DIGESTS=$(sed -n 's/^Signer #[0-9]* in lineage certificate SHA-256 digest: //p' "$RUNNER_TEMP/lineage.txt")
-          if [ "$(sed -n '1p' <<< "$DIGESTS")" != "$DEBUG_CERT_SHA256" ] \
-              || [ "$(sed -n '$p' <<< "$DIGESTS")" != "$RELEASE_CERT_SHA256" ]; then
-            echo "::error title=Wrong signing lineage::ANDROID_SIGNING_LINEAGE_BASE64 must lead from the debug key to the key in ANDROID_KEYSTORE_BASE64."
-            exit 1
-          fi
-          # Rollback on an old signer lets anything signed with it take the app
-          # back after the rotation, which would undo the whole point.
-          PAST_ROLLBACK=$(grep 'Has rollback capability' "$RUNNER_TEMP/lineage.txt" | sed -e 's/.*: *//' -e '$d')
-          if [[ "$PAST_ROLLBACK" == *true* ]]; then
-            echo "::error title=Unsafe signing lineage::An old signer in the lineage has the rollback capability. Recreate it with --set-rollback false."
-            exit 1
-          fi
-
-          # Oldest signer first: apksigner uses it for v2, and the rotated key
-          # for v3 from API 28. Without --rotation-min-sdk-version it would
-          # only rotate on Android 13+ (v3.1) and leave 9-12L on the debug key.
-          APK=android/app/build/outputs/apk/github/release/app-github-release.apk
-          apksigner sign \
-            --v4-signing-enabled false \
-            --ks android/app/debug.keystore --ks-key-alias androiddebugkey \
-            --ks-pass pass:android --key-pass pass:android \
-            --next-signer \
-            --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" \
-            --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEY_PASSWORD \
-            --lineage "$LINEAGE" \
-            --rotation-min-sdk-version 28 \
-            --out "$RUNNER_TEMP/app-release-rotated.apk" \
-            "$APK"
-          mv "$RUNNER_TEMP/app-release-rotated.apk" "$APK"
-          echo "rotated=true" >> "$GITHUB_OUTPUT"
-
       # The last gate before anything is uploaded.
       - name: Verify the APK signature
         env:
           RELEASE_CERT_SHA256: ${{ steps.key.outputs.cert_sha256 }}
-          ROTATED: ${{ steps.rotation.outputs.rotated }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/github/release/app-github-release.apk
@@ -232,13 +173,11 @@ jobs:
             echo "::error title=Wrong APK signer::Android 9+ would see '$MODERN', expected only the release key $RELEASE_CERT_SHA256."
             exit 1
           fi
-          if [ "$ROTATED" = "true" ]; then
-            echo "::warning title=Android 7-8.1 still trust the debug key::The v2 signature is made with the debug key so that installs on Android 7-8.1 can update. Those devices remain exposed; see docs/android-release.md."
-          elif [ "$LEGACY" != "$RELEASE_CERT_SHA256" ]; then
+          if [ "$LEGACY" != "$RELEASE_CERT_SHA256" ]; then
             echo "::error title=Wrong APK signer::Android 7-8.1 would see '$LEGACY', expected only the release key $RELEASE_CERT_SHA256."
             exit 1
           fi
-          aapt2 dump badging "$APK" | grep '^package:' || true
+          aapt2 dump badging "$APK" | grep "package: name='ir.irisa.mail.github'"
 
       # The R8 mapping goes out with the APK: without the one from this exact
       # build, the obfuscated frames in a release stack trace cannot be
@@ -249,14 +188,14 @@ jobs:
           set -euo pipefail
           VERSION=$(cat VERSION | tr -d '[:space:]')
           SRC=android/app/build/outputs/apk/github/release/app-github-release.apk
-          DEST="bulwark-mobile-${VERSION}-${GITHUB_SHA::7}.apk"
+          DEST="irisa-mail-${VERSION}-${GITHUB_SHA::7}.apk"
           cp "$SRC" "$DEST"
           sha256sum "$DEST" > "$DEST.sha256"
 
           MAPPING_SRC=android/app/build/outputs/mapping/githubRelease/mapping.txt
           MAPPING=""
           if [ -f "$MAPPING_SRC" ]; then
-            MAPPING="bulwark-mobile-${VERSION}-${GITHUB_SHA::7}-mapping.txt"
+            MAPPING="irisa-mail-${VERSION}-${GITHUB_SHA::7}-mapping.txt"
             cp "$MAPPING_SRC" "$MAPPING"
           elif grep -Eq '^android\.enableMinifyInReleaseBuilds=true\s*$' android/gradle.properties; then
             echo "::error title=R8 mapping missing::R8 is on but the build wrote no $MAPPING_SRC, so stack traces from this APK could not be decoded."
@@ -395,10 +334,10 @@ jobs:
       - name: Build the Play bundle
         working-directory: android
         env:
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_STORE_FILE: ${{ steps.key.outputs.store_file }}
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ORG_GRADLE_PROJECT_BULWARK_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_STORE_FILE: ${{ steps.key.outputs.store_file }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_IRISA_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
           ./gradlew bundlePlayRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64
@@ -419,8 +358,8 @@ jobs:
             exit 1
           fi
           MANIFEST=$(unzip -p "$AAB" base/manifest/AndroidManifest.xml | tr -c '[:print:]' '\n')
-          if ! grep -q 'org.bulwarkmail.mobile' <<< "$MANIFEST"; then
-            echo "::error title=Wrong package::The bundle is not org.bulwarkmail.mobile."
+          if ! grep -q 'ir.irisa.mail' <<< "$MANIFEST"; then
+            echo "::error title=Wrong package::The bundle is not ir.irisa.mail."
             exit 1
           fi
           for permission in REQUEST_INSTALL_PACKAGES READ_MEDIA_IMAGES READ_MEDIA_VIDEO RECORD_AUDIO; do
@@ -435,8 +374,8 @@ jobs:
         run: |
           set -euo pipefail
           VERSION=$(cat VERSION | tr -d '[:space:]')
-          AAB="bulwark-mobile-play-${VERSION}-${GITHUB_SHA::7}.aab"
-          MAPPING="bulwark-mobile-play-${VERSION}-${GITHUB_SHA::7}-mapping.txt"
+          AAB="irisa-mail-play-${VERSION}-${GITHUB_SHA::7}.aab"
+          MAPPING="irisa-mail-play-${VERSION}-${GITHUB_SHA::7}-mapping.txt"
           cp android/app/build/outputs/bundle/playRelease/app-play-release.aab "$AAB"
           cp android/app/build/outputs/mapping/playRelease/mapping.txt "$MAPPING"
           echo "aab=$AAB" >> "$GITHUB_OUTPUT"
@@ -460,7 +399,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: org.bulwarkmail.mobile
+          packageName: ir.irisa.mail
           releaseFiles: ${{ steps.artifact.outputs.aab }}
           mappingFile: ${{ steps.artifact.outputs.mapping }}
           releaseName: ${{ steps.artifact.outputs.version }}
