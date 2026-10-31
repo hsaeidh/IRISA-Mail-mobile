@@ -68,7 +68,7 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
   const organizations: OrganizationProfile[] = raw.organizations.map((entry, index) => {
     if (!entry || typeof entry !== 'object') throw new Error(`Organization at index ${index} must be an object`);
     const item = entry as Record<string, unknown>;
-    const key = typeof item.key === 'string' ? item.key.trim() : '';
+    const key = typeof item.key === 'string' ? item.key.trim().toLowerCase() : '';
     const displayName = typeof item.displayName === 'string' ? item.displayName.trim() : '';
     if (!/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(key) || !displayName) {
       throw new Error(`Organization at index ${index} has an invalid key or displayName`);
@@ -94,6 +94,9 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
       throw new Error(`Organization ${key} must define oidc and jmap settings`);
     }
     const oidc = item.oidc as Record<string, unknown>;
+    if ('clientSecret' in oidc || 'client_secret' in oidc) {
+      throw new Error(`Organization ${key} must not contain an OIDC client secret; mobile clients are public clients`);
+    }
     const jmap = item.jmap as Record<string, unknown>;
     if (typeof oidc.enabled !== 'boolean' || typeof jmap.enabled !== 'boolean') {
       throw new Error(`Organization ${key} must explicitly enable or disable each provider`);
