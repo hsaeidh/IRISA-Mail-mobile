@@ -748,7 +748,7 @@ function subscriptionError(err: unknown, relayBaseUrl: string): PushSetupError {
       'jmap',
       t(
         'settings.notifications.push.err_url_refused',
-        'The mail server refuses to send notifications to the relay at {url}. It only accepts https addresses on a public domain name, not a private IP address or a local name such as localhost, .local or .lan. Use the hosted relay, or give your relay a public domain name.',
+        'The mail server refuses to send notifications to the relay at {url}. It only accepts https addresses on a public domain name, not a private IP address or a local name such as localhost, .local or .lan. Use a public HTTPS hostname for your own relay.',
         { url: relayBaseUrl },
       ),
     );
