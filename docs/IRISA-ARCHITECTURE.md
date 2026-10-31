@@ -16,7 +16,7 @@ The upstream project remains the JMAP mail/calendar/contacts client. IRISA-speci
 | Audience | IRISA and subsidiary organizations only |
 | Identity | Both WSO2 OIDC and direct JMAP login |
 | Organization selection | Resolve the organization from the entered email domain using an explicit allow-listed map |
-| Android notifications | Support the existing Bulwark relay and UnifiedPush; add an embedded ntfy-compatible client so users do not need to install the ntfy app |
+| Android notifications | Use an IRISA-owned relay when configured, retain optional FCM/UnifiedPush adapters, and add an embedded ntfy-compatible client so users do not need to install the ntfy app |
 | iOS notifications | APNs through the IRISA push relay; do not assume Android UnifiedPush behavior exists on iOS |
 | Push selection | User-selectable where multiple supported transports are available |
 | Languages | Persian and English, with correct RTL behavior for Persian |
@@ -65,7 +65,7 @@ Production configuration must be supplied by the build/release environment or a 
 
 ### Existing upstream capability
 
-The upstream code already contains a hosted Bulwark relay path, FCM handling, Android UnifiedPush integration, and iOS APNs-related native code. Preserve these capabilities while adding IRISA providers behind a transport abstraction.
+The upstream code contains a relay protocol adapter, FCM handling, Android UnifiedPush integration, and iOS APNs-related native code. The IRISA build now disables the upstream hosted relay by default and removes the upstream Firebase project configuration. FCM is optional and requires an IRISA Firebase config; relay URLs are supplied through IRISA_PUSH_RELAY_URL. Preserve these adapters without ever sending IRISA users to upstream Bulwark infrastructure.
 
 ### Android embedded ntfy client
 
@@ -97,7 +97,7 @@ The settings UI should expose only transports supported by the current platform/
 
 The proposed brand defaults are recorded in `config/irisa-brand.example.json`. Application identifiers and URL schemes must be changed consistently across Expo config, native Android manifests/flavors, iOS bundle settings, push entitlements, OAuth redirect registrations, and release workflows.
 
-Do not replace binary artwork with text placeholders. Final icons/splash assets must be supplied and reviewed before a branded release.
+The app name, package/bundle IDs, source links, keychain groups, extension labels, and About view are being rebranded. The About view currently uses a temporary IRISA monogram; the app icon, adaptive icon, splash, and widget artwork are still upstream assets and must be replaced with approved IRISA artwork before a production release.
 
 ## Upstream maintenance strategy
 
@@ -110,7 +110,7 @@ Rules:
 1. Never develop IRISA features directly on `upstream-sync`.
 2. Pull upstream changes into `upstream-sync` and open a PR targeting `development`.
 3. Resolve conflicts in `development`, run checks, and review native platform changes before merging.
-4. Promote tested `development` to `main) using a reviewed PR.
+4. Promote tested `development` to `main` using a reviewed PR.
 5. Tag releases as `irisa-vX.Y.Z`; record the exact upstream commit in release notes.
 6. Keep IRISA-only code in dedicated directories/modules and minimize edits to upstream files.
 7. When an upstream file must be patched, document the reason and add a regression test.
@@ -131,24 +131,31 @@ The workflow in `.github/workflows/upstream-sync.yml` provides a manual/schedule
 - [x] Route email-first login through the configured organization and use its allow-listed JMAP origin.
 - [x] Add WSO2-compatible Authorization Code + PKCE login with `orgId`/`orgHandle` routing and RS256 ID-token signature/claim/nonce validation.
 - [x] Register the dedicated `ir.irisa.mail:/oauth/callback` scheme in Expo and Android configuration.
-- [x] Add resolver and WSO2 OIDC unit tests; verify final CI result before treating the phase as test-complete.
+- [ ] Add resolver and WSO2 OIDC unit tests and verify the latest CI run before treating the phase as test-complete.
 - [ ] Verify WSO2 login against the actual IRISA IS 7.3.0 tenant setup and verify Stalwart accepts only the intended WSO2 access-token audience/scopes.
 - [ ] Add end-to-end tenant-isolation, refresh, account-switching, and revocation tests.
-- [ ] Keep direct JMAP password/token sign-in as a separately available path and test its coexistence with organization SSO.
+- [x] Preserve direct JMAP password/token sign-in; restrict managed-organization server selection to allow-listed origins and avoid untrusted webmail handoffs/pairing links.
+- [ ] Test direct JMAP and organization SSO coexistence against the real Stalwart deployment.
 
 ### Phase 2 — branding and localization
-- [ ] Wire IRISA build-time branding and identifiers through all native targets.
+- [x] Set IRISA app name, Android application IDs, iOS bundle ID, URL schemes, source-code links, About identity, and iOS extension/keychain-group identifiers.
+- [x] Remove the upstream Firebase project config and make FCM opt-in to an IRISA-owned configuration.
+- [x] Remove the upstream TestFlight link and use IRISA repository releases until an IRISA listing exists.
+- [ ] Replace app icon, adaptive icon, splash and widget artwork with approved IRISA assets.
+- [ ] Supply Apple Team ID and verify iOS signing/keychain groups.
 - [ ] Verify Persian RTL layouts and English LTR layouts on real devices.
-- [ ] Add IRISA source-code/about links and release metadata.
 
 ### Phase 3 — notifications
-- [ ] Preserve and test upstream relay/FCM and UnifiedPush paths.
-- [ ] Implement embedded Android ntfy client and secure subscription provisioning.
-- [ ] Integrate Android background execution and notification channels.
+- [x] Remove the upstream hosted Bulwark relay as the default and make the IRISA relay endpoint build-configurable.
+- [x] Make FCM conditional on an IRISA-owned google-services.json; retain UnifiedPush as an optional external-distributor path.
+- [ ] Implement embedded Android ntfy client and secure per-device subscription provisioning.
+- [ ] Integrate Android background execution, reconnect/replay, and notification channels.
 - [ ] Confirm APNs relay behavior for iOS and platform-specific settings.
 - [ ] Test reconnect, offline replay, duplicate suppression, revocation, battery use, and OS restrictions.
 
 ### Phase 4 — release
+- [x] Set IRISA Android application IDs and release-signing property names; remove the upstream debug-key lineage.
+- [x] Set IRISA iOS bundle/extension identifiers and require an explicit Apple Team ID for signed builds.
 - [ ] Run typecheck, unit tests, Android build, iOS build, and device regression tests.
 - [ ] Verify AGPL-3.0-only obligations and app-store distribution permission status before distribution.
 - [ ] Publish source corresponding to every distributed build.
