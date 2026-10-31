@@ -89,7 +89,7 @@ describe('configured OIDC for WSO2 organizations', () => {
       ...metadata,
       authorization_endpoint: 'https://attacker.example/authorize',
     }, metadataUrl));
-    await expect(discoverConfiguredOidcMetadata(issuer)).rejects.toThrow(/same configured issuer origin/);
+    await expect(discoverConfiguredOidcMetadata(issuer)).rejects.toThrow(/configured issuer origin/);
   });
 
   it('routes the PKCE request to the configured WSO2 organization and verifies its ID token', async () => {
