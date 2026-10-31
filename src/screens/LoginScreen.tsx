@@ -348,20 +348,17 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
       setBusy('browser');
       const wasAuthenticated = useAuthStore.getState().isAuthenticated;
       try {
-        const signInOptions = {
-          addAccount: isAddMode,
-          signal: attempt.signal,
-          ...(organization ? { jmapResourceOrigins: organization.jmap.resourceOrigins ?? [] } : {}),
-        };
         const signedIn = organization
-          ? organization.oidc.enabled
-            ? await loginViaOrganizationOidc(target, organization.oidc, signInOptions)
-            : await loginViaOAuth(target, signInOptions)
-          : (await loginViaWebmail(target, signInOptions), true);
+          ? await loginViaOAuth(target, {
+              addAccount: isAddMode,
+              signal: attempt.signal,
+              jmapResourceOrigins: organization.jmap.resourceOrigins ?? [],
+            })
+          : (await loginViaWebmail(target, { addAccount: isAddMode, signal: attempt.signal }), true);
         if (!isLive(attempt) || !signedIn) return;
-        // A managed organization uses only its fixed, allow-listed issuer and
-        // mail origin. External WSO2 tokens are sent to JMAP only after the
-        // configured Stalwart deployment is set up to accept them.
+        // A managed organization uses its configured server's own OAuth
+        // endpoint; do not accept a webmail handoff that can redirect JMAP
+        // authentication to an arbitrary host.
         finishIfSignedIn(wasAuthenticated);
       } catch (err) {
         if (!isLive(attempt) || isSignInCancelled(err)) return;
@@ -372,7 +369,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
         if (endAttempt(attempt)) setBusy(null);
       }
     },
-    [beginAttempt, continueWithSecondFactor, endAttempt, finishIfSignedIn, isAddMode, loginViaOAuth, loginViaOrganizationOidc, loginViaWebmail, organization, t],
+    [beginAttempt, continueWithSecondFactor, endAttempt, finishIfSignedIn, isAddMode, loginViaOAuth, loginViaWebmail, organization, t],
   );
 
   const handleEmailContinue = React.useCallback(async () => {
