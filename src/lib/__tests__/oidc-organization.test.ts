@@ -90,6 +90,12 @@ describe('configured OIDC for WSO2 organizations', () => {
       authorization_endpoint: 'https://attacker.example/authorize',
     }, metadataUrl));
     await expect(discoverConfiguredOidcMetadata(issuer)).rejects.toThrow(/configured issuer origin/);
+
+    fetchMock.mockResolvedValueOnce(response({
+      ...metadata,
+      end_session_endpoint: 'https://attacker.example/logout',
+    }, metadataUrl));
+    await expect(discoverConfiguredOidcMetadata(issuer)).rejects.toThrow(/revocation and logout endpoints/);
   });
 
   it('routes the PKCE request to the configured WSO2 organization and verifies its ID token', async () => {
