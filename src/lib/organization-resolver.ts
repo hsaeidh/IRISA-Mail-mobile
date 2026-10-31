@@ -5,7 +5,9 @@
  * tenant routing must be injected by the release/build environment, never
  * inferred from arbitrary email domains or fetched from an untrusted host.
  */
-import { emailDomain } from './server-discovery';
+import { toAsciiDomain } from './idn';
+
+const EMAIL_WITH_DOMAIN_RE = /^[^\\s@]+@([^\\s@]+\\.[^\\s@]+)$/;
 
 export interface OrganizationOidcConfig {
   enabled: boolean;
@@ -44,6 +46,11 @@ export type OrganizationResolution =
   | { ok: true; organization: OrganizationProfile; matchedDomain: string }
   | { ok: false; reason: 'invalid-email' | 'unknown-domain' };
 
+function normalizedEmailDomain(email: string): string | null {
+  const match = EMAIL_WITH_DOMAIN_RE.exec(email.trim());
+  return match ? toAsciiDomain(match[1]) : null;
+}
+
 function normalizedHttpsUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {
@@ -81,7 +88,7 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     }
     const domains = item.emailDomains.map((value) => {
       if (typeof value !== 'string') throw new Error(`Organization ${key} has a non-string email domain`);
-      const domain = emailDomain(`user@${value.trim()}`);
+      const domain = normalizedEmailDomain(`user@${value.trim()}`);
       if (!domain || domain !== value.trim().toLowerCase().replace(/\.$/, '')) {
         throw new Error(`Organization ${key} has an invalid email domain: ${value}`);
       }
@@ -164,7 +171,7 @@ export function resolveOrganization(
   email: string,
   config: OrganizationConfig,
 ): OrganizationResolution {
-  const domain = emailDomain(email);
+  const domain = normalizedEmailDomain(email);
   if (!domain) return { ok: false, reason: 'invalid-email' };
   const organization = config.organizations.find((candidate) => candidate.emailDomains.includes(domain));
   return organization
