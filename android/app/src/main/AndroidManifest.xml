@@ -57,6 +57,13 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="org.bulwarkmail.mobile"/>
       </intent-filter>
+      <!-- IRISA WSO2 OIDC public-client callback (ir.irisa.mail:/oauth/callback). -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="ir.irisa.mail"/>
+      </intent-filter>
       <intent-filter>
         <action android:name="android.intent.action.VIEW"/>
         <action android:name="android.intent.action.SENDTO"/>
