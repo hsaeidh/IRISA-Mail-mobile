@@ -29,6 +29,22 @@ const APPLE_TEAM_ID = process.env.APPLE_TEAM_ID || '8ZANF9LQ39';
 // use production, simulators and development builds the sandbox.
 const APS_ENVIRONMENT = process.env.APS_ENVIRONMENT === 'development' ? 'development' : 'production';
 
+/**
+ * Public tenant routing configuration. The JSON contains issuer/client IDs
+ * and organization identifiers, never client secrets. Supply a deployment-
+ * specific file with IRISA_ORGANIZATIONS_CONFIG; no example config is bundled
+ * into a release by default.
+ */
+let IRISA_ORGANIZATIONS = null;
+if (process.env.IRISA_ORGANIZATIONS_CONFIG) {
+  const configPath = path.resolve(__dirname, process.env.IRISA_ORGANIZATIONS_CONFIG);
+  IRISA_ORGANIZATIONS = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  if (!IRISA_ORGANIZATIONS || IRISA_ORGANIZATIONS.schemaVersion !== 1 ||
+      !Array.isArray(IRISA_ORGANIZATIONS.organizations)) {
+    throw new Error('IRISA_ORGANIZATIONS_CONFIG must contain schemaVersion 1 and an organizations array');
+  }
+}
+
 module.exports = {
   expo: {
     name: 'Bulwark Mobile',
@@ -38,7 +54,7 @@ module.exports = {
     // org.bulwarkmail.mobile: is where Stalwart 1.0 sends the browser sign-in
     // back: it registers public clients only with a scheme that has a dot.
     // Android's manifest is maintained by hand and lists the same schemes.
-    scheme: ['bulwarkmobile', 'bulwarkmail', 'mailto', 'org.bulwarkmail.mobile'],
+    scheme: ['bulwarkmobile', 'bulwarkmail', 'mailto', 'org.bulwarkmail.mobile', 'ir.irisa.mail'],
     version: VERSION,
     orientation: 'default',
     icon: './assets/icon.png',
@@ -154,6 +170,7 @@ module.exports = {
       iosSharedKeychainGroup: `${APPLE_TEAM_ID}.org.bulwarkmail.shared`,
       iosAppKeychainGroup: `${APPLE_TEAM_ID}.org.bulwarkmail.mobile`,
       apnsEnvironment: APS_ENVIRONMENT === 'development' ? 'sandbox' : 'production',
+      irisaOrganizations: IRISA_ORGANIZATIONS,
     },
   },
 };
