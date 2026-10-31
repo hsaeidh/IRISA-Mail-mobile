@@ -60,8 +60,8 @@ function isHttpsEndpoint(value: unknown): value is string {
  */
 export async function discoverConfiguredOidcMetadata(issuer: string): Promise<OAuthMetadata> {
   if (!isHttpsEndpoint(issuer)) throw new HandoffError('The configured OIDC issuer must use HTTPS');
-  const normalizedIssuer = issuer.replace(/\/+$/, '');
-  const metadataUrl = `${normalizedIssuer}/.well-known/openid-configuration`;
+  const normalizedIssuer = issuer.trim();
+  const metadataUrl = `${normalizedIssuer.replace(/\/+$/, '')}/.well-known/openid-configuration`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), OIDC_METADATA_TIMEOUT_MS);
   try {
