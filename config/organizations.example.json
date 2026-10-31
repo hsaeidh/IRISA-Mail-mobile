@@ -13,9 +13,9 @@
         "enabled": true,
         "issuer": "https://identity.example.invalid",
         "organizationId": "",
-        "organizationHandle": "",
+        "organizationHandle": "REPLACE_WITH_WSO2_ORG_HANDLE",
         "clientId": "",
-        "redirectUri": "irisa-mail://oauth/callback",
+        "redirectUri": "irisamail://oauth/callback",
         "scopes": [
           "openid",
           "profile",
