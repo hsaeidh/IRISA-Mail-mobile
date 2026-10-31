@@ -133,6 +133,7 @@ describe('configured OIDC for WSO2 organizations', () => {
     expect(tokens.accessToken).toBe('jmap-access-token');
     expect(tokens.idToken).toBe(signedToken);
     expect(tokens.issuer).toBe(issuer);
+    expect(tokens.externalProvider).toBe(true);
     expect(tokens.revocationEndpoint).toBe(metadata.revocation_endpoint);
     expect(tokens.endSessionEndpoint).toBe(metadata.end_session_endpoint);
     expect(tokens.logoutRedirectUri).toBe('ir.irisa.mail:/oauth/logout');
