@@ -69,6 +69,24 @@ The upstream code contains a relay protocol adapter, FCM handling, Android Unifi
 
 ### Android embedded ntfy client
 
+The embedded Android client must not depend on the separate ntfy app. The
+current design is a direct HTTPS JSON-stream subscriber with a per-device,
+read-only topic credential stored using Android Keystore encryption. A
+user-visible foreground service is required to keep the stream alive while the
+app is backgrounded. Use Android's `specialUse` foreground-service type with
+a precise subtype declaration; do not misuse `dataSync` (which is time-limited
+on recent Android versions) or `remoteMessaging` for a mail notification
+listener. Google Play distribution will require a compliant special-use
+foreground-service declaration and review. Users must be able to stop the
+service, and force-stop/OEM battery policies can still interrupt delivery.
+The app must not claim guaranteed always-on delivery.
+
+A provisioning API is required before production activation. It must
+authenticate the WSO2 user, create a random per-device topic, grant only
+read access, return a short-lived/revocable token, and support device
+revocation. Do not derive topics from email addresses or embed an ntfy admin
+credential in the APK.
+
 The target experience is that the user installs only IRISA Mail. The app itself subscribes to the IRISA ntfy server and displays Android notifications; the separate ntfy application is not required.
 
 Important implementation constraints:
