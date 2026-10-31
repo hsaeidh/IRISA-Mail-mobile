@@ -576,6 +576,21 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
   // `bulwarkmail://` link.
   const handleSignInLink = React.useCallback(
     async (payload: QrLoginPayload) => {
+      try {
+        if (getOrganizationConfig()) {
+          setNotice({
+            title: t('login.mobile.organization_pairing_disabled', 'Use your organization email to sign in'),
+            detail: t('login.mobile.organization_pairing_disabled_detail', 'Pairing and server handoff links are disabled in this managed IRISA build.'),
+          });
+          return;
+        }
+      } catch (err) {
+        setNotice({
+          title: t('login.mobile.organization_config_invalid', 'Organization sign-in is not configured correctly'),
+          detail: err instanceof Error ? err.message : String(err),
+        });
+        return;
+      }
       setScannerVisible(false);
       setPasteVisible(false);
 
