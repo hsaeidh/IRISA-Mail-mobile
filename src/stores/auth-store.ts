@@ -124,7 +124,7 @@ export interface AuthState {
   loginWithToken: (serverUrl: string, token: string, opts?: SignInOptions) => Promise<void>;
   loginViaWebmail: (webmailUrl: string, opts?: SignInOptions) => Promise<void>;
   /** OAuth/OIDC (PKCE) straight against the mail server's authorization server. */
-  loginViaOAuth: (serverUrl: string, opts?: SignInOptions) => Promise<void>;
+  loginViaOAuth: (serverUrl: string, opts?: SignInOptions) => Promise<boolean>;
   /** WSO2/external OIDC for a pre-resolved organization, then JMAP Bearer sign-in. */
   loginViaOrganizationOidc: (serverUrl: string, oidc: OrganizationOidcConfig, opts?: SignInOptions) => Promise<boolean>;
   loginViaPairing: (webmailUrl: string, code: string, opts?: SignInOptions) => Promise<void>;
@@ -848,7 +848,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err) {
       if (err instanceof HandoffCancelledError) {
         set({ isLoading: false, error: null });
-        return;
+        return false;
       }
       if (isSignInCancelled(err)) throw err;
       const message = err instanceof Error ? err.message : 'Sign-in failed';
@@ -857,6 +857,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     try {
       await completeOAuthHandoff(set, get, { flow: 'oauth', serverUrl: base, tokens }, opts);
+      return true;
     } catch (err) {
       set({ isLoading: false, error: oauthSignInMessage(err) });
       throw err;
