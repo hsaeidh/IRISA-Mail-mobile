@@ -16,6 +16,7 @@
         "organizationHandle": "REPLACE_WITH_WSO2_ORG_HANDLE",
         "clientId": "",
         "redirectUri": "ir.irisa.mail:/oauth/callback",
+        "logoutRedirectUri": "ir.irisa.mail:/oauth/logout",
         "legacyOrganizationSso": false,
         "scopes": [
           "openid",
