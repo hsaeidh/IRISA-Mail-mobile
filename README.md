@@ -42,7 +42,7 @@ described in [WSO2 mobile OIDC setup](docs/WSO2-MOBILE-OIDC.md), then:
 
 ```cmd
 set IRISA_ORGANIZATIONS_CONFIG=config\organizations.json
-npx expo run:android
+npx expo run:android --variant githubDebug
 ```
 
 See [Android release signing](docs/android-release.md) for release APK/AAB
