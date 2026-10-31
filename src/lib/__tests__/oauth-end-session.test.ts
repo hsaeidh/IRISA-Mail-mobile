@@ -149,7 +149,16 @@ describe('the id token', () => {
 
   it('outlives a refresh that hands out none', async () => {
     fetchMock.mockResolvedValue(json({ access_token: 'at2', refresh_token: 'rt2', expires_in: 300 }));
-    const next = await refreshOAuthAccessToken(tokens());
+    const next = await refreshOAuthAccessToken(tokens({
+      tokenEndpoint: 'https://identity.example.org/oauth2/token',
+      issuer: 'https://identity.example.org/oauth2/token',
+      revocationEndpoint: 'https://identity.example.org/oauth2/revoke',
+      endSessionEndpoint: 'https://identity.example.org/oidc/logout',
+      logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
+    }));
     expect(next.idToken).toBe('id.token.sig');
+    expect(next.revocationEndpoint).toBe('https://identity.example.org/oauth2/revoke');
+    expect(next.endSessionEndpoint).toBe('https://identity.example.org/oidc/logout');
+    expect(next.logoutRedirectUri).toBe('ir.irisa.mail:/oauth/logout');
   });
 });
