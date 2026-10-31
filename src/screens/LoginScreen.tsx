@@ -19,6 +19,8 @@ import {
   isEmailAddress,
   normalizeServerUrl,
 } from '../lib/server-discovery';
+import { getOrganizationConfig } from '../lib/irisa-config';
+import { resolveOrganization, isAllowedJmapOrigin, type OrganizationProfile } from '../lib/organization-resolver';
 import { describeLoginError, type LoginErrorCopy } from '../lib/login-errors';
 import { describeHandoffRedeemError } from './login/handoff-errors';
 import {
@@ -87,6 +89,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
   const login = useAuthStore((state) => state.login);
   const loginWithToken = useAuthStore((state) => state.loginWithToken);
   const loginViaWebmail = useAuthStore((state) => state.loginViaWebmail);
+  const loginViaOrganizationOidc = useAuthStore((state) => state.loginViaOrganizationOidc);
   const loginViaPairing = useAuthStore((state) => state.loginViaPairing);
   const clearError = useAuthStore((state) => state.clearError);
   const storeError = useAuthStore((state) => state.error);
@@ -112,6 +115,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
   // Drives the confirm step's heading: we only claim to have "found" a server
   // when discovery actually found one.
   const [serverDiscovered, setServerDiscovered] = React.useState(false);
+  const [organization, setOrganization] = React.useState<OrganizationProfile | null>(null);
   const [password, setPassword] = React.useState('');
   // Second factor. Shown only after the server asked for it (402), so the
   // common no-2FA sign-in stays a two-field form.
@@ -375,6 +379,36 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
     setSearching(true);
     rememberEmail(value);
     try {
+      const tenantConfig = getOrganizationConfig();
+      if (tenantConfig) {
+        const resolved = resolveOrganization(value, tenantConfig);
+        if (resolved.ok) {
+          const selected = resolved.organization;
+          if (!selected.jmap.enabled || selected.jmap.allowedOrigins.length === 0) {
+            setNotice({
+              title: t('login.mobile.organization_server_missing', 'Your organization mail server is not configured'),
+              detail: t('login.mobile.organization_server_missing_detail', 'Contact your organization administrator.'),
+            });
+            return;
+          }
+          setOrganization(selected);
+          const mappedServer = selected.jmap.allowedOrigins[0];
+          setServerUrl(mappedServer);
+          setServerInput(mappedServer);
+          setServerDiscovered(true);
+          goTo('confirm');
+          return;
+        }
+        setOrganization(null);
+        if (!tenantConfig.fallback?.allowManualServerEntry) {
+          setNotice({
+            title: t('login.mobile.organization_unknown', 'This email domain is not enabled'),
+            detail: t('login.mobile.organization_unknown_detail', 'Contact your organization administrator.'),
+          });
+          return;
+        }
+      }
+
       const found = await discoverServerForEmail(value, { knownServerUrls, signal: attempt.signal });
       if (!isLive(attempt)) return;
       if (found) {
@@ -387,10 +421,40 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
         setServerInput('');
         goTo('server');
       }
+    } catch (err) {
+      if (isLive(attempt)) {
+        setNotice({
+          title: t('login.mobile.organization_config_invalid', 'Organization sign-in is not configured correctly'),
+          detail: err instanceof Error ? err.message : String(err),
+        });
+      }
     } finally {
       if (endAttempt(attempt)) setSearching(false);
     }
   }, [beginAttempt, email, endAttempt, goTo, knownServerUrls, rememberEmail, t]);
+
+  const runOrganizationOidc = React.useCallback(
+    async (target: string, oidc: NonNullable<OrganizationProfile['oidc']>) => {
+      setNotice(null);
+      const attempt = beginAttempt();
+      setBusy('browser');
+      const wasAuthenticated = useAuthStore.getState().isAuthenticated;
+      try {
+        await loginViaOrganizationOidc(target, oidc, { addAccount: isAddMode, signal: attempt.signal });
+        if (!isLive(attempt)) return;
+        finishIfSignedIn(wasAuthenticated);
+      } catch (err) {
+        if (!isLive(attempt) || isSignInCancelled(err)) return;
+        setNotice({
+          title: t('login.mobile.organization_signin_failed', 'Organization sign-in failed'),
+          detail: err instanceof Error ? err.message : String(err),
+        });
+      } finally {
+        if (endAttempt(attempt)) setBusy(null);
+      }
+    },
+    [beginAttempt, endAttempt, finishIfSignedIn, isAddMode, loginViaOrganizationOidc, t],
+  );
 
   const handleServerContinue = React.useCallback(() => {
     const normalized = normalizeServerUrl(serverInput);
@@ -401,10 +465,41 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
       });
       return;
     }
+    try {
+      const tenantConfig = getOrganizationConfig();
+      if (tenantConfig && isEmailAddress(email.trim())) {
+        const resolved = resolveOrganization(email.trim(), tenantConfig);
+        if (resolved.ok) {
+          if (!isAllowedJmapOrigin(normalized, resolved.organization)) {
+            setNotice({
+              title: t('login.mobile.organization_server_not_allowed', 'This server is not approved for your organization'),
+              detail: t('login.mobile.organization_server_not_allowed_detail', 'Use the configured mail server or contact your administrator.'),
+            });
+            return;
+          }
+          setOrganization(resolved.organization);
+        } else {
+          setOrganization(null);
+          if (!tenantConfig.fallback?.allowManualServerEntry) {
+            setNotice({
+              title: t('login.mobile.organization_unknown', 'This email domain is not enabled'),
+              detail: t('login.mobile.organization_unknown_detail', 'Contact your organization administrator.'),
+            });
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      setNotice({
+        title: t('login.mobile.organization_config_invalid', 'Organization sign-in is not configured correctly'),
+        detail: err instanceof Error ? err.message : String(err),
+      });
+      return;
+    }
     setServerUrl(normalized);
     setServerDiscovered(false);
     goTo('confirm');
-  }, [goTo, serverInput, t]);
+  }, [email, goTo, serverInput, t]);
 
   const handlePasswordSubmit = React.useCallback(async () => {
     const target = serverUrl || normalizeServerUrl(serverInput);
@@ -732,7 +827,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
           <ConfirmStep
             serverUrl={serverUrl}
             discovered={serverDiscovered}
-            onContinue={() => void runHandoff(serverUrl)}
+            onContinue={() => void (organization?.oidc.enabled ? runOrganizationOidc(serverUrl, organization.oidc) : runHandoff(serverUrl))}
             onChangeServer={() => {
               setFailedDomain(null);
               goTo('server');
