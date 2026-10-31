@@ -1543,12 +1543,13 @@
         "shared_mailboxes_no_push": "Mailboxes others share with you don't send background notifications.",
         "status_android_only": "Background notifications are available on Android only.",
         "transport_desc": "How notifications reach this device: Google’s Firebase Cloud Messaging, or a UnifiedPush distributor app (such as ntfy) for Google-free delivery.",
+        "transport_desc_unified": "Use a UnifiedPush distributor app for Google-free delivery.",
         "transport_fcm": "Google (FCM)",
         "transport_label": "Delivery method",
         "transport_unifiedpush": "UnifiedPush",
         "up_distributor_desc": "Several UnifiedPush distributor apps are installed - pick the one that should deliver notifications.",
         "up_distributor_label": "Distributor",
-        "up_no_distributor": "No UnifiedPush distributor app is installed on this device. Install one (for example ntfy) and try again."
+        "up_no_distributor": "UnifiedPush requires a separate compatible distributor app (for example ntfy). This option is optional."
       }
     },
     "offline": {
