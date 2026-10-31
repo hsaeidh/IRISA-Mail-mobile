@@ -9,7 +9,8 @@
     "bundleIdentifier": "ir.irisa.mail"
   },
   "urlSchemes": [
-    "irisamail"
+    "irisamail",
+    "ir.irisa.mail"
   ],
   "sourceCodeUrl": "https://github.com/hsaeidh/IRISA-Mail-mobile",
   "defaultLocale": "fa",
