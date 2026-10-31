@@ -10,7 +10,8 @@ replace the Stalwart-side configuration needed to accept WSO2 access tokens.
    organization configuration. It does not build an issuer or mail hostname
    from the email domain.
 3. The configured organization supplies a fixed WSO2 issuer, public client ID,
-   redirect URI, organization identifier, and one approved JMAP origin.
+   redirect URI, organization identifier, an approved JMAP origin, and optional
+   resource-host origins.
 4. The app loads OIDC discovery metadata from
    `<issuer>/.well-known/openid-configuration`. It requires the returned
    issuer to match exactly and the authorization, token, and JWKS endpoints
@@ -20,6 +21,12 @@ replace the Stalwart-side configuration needed to accept WSO2 access tokens.
    issuer, audience, expiry, issue time, and nonce against the discovered JWKS.
 6. The resulting access token is presented to the configured Stalwart JMAP
    origin to create the mail session.
+
+For managed sessions, the app also validates the JMAP session's API origin
+against the selected mail-server origin. Upload/download/event-source URLs on
+other hosts are rejected unless their HTTPS origins are explicitly listed in
+`jmap.resourceOrigins`. This prevents a session document from sending the
+user's JMAP bearer token to an unapproved resource host.
 
 The app's ID-token validation authenticates the OIDC response to the mobile
 client. It does **not** by itself make the WSO2 access token acceptable to
@@ -75,12 +82,16 @@ than copying this example.
 2. Replace the reserved example domain, issuer, organization handle/ID, client
    ID, and mail origin with values from your deployment.
 3. Keep `redirectUri` exactly `ir.irisa.mail:/oauth/callback`.
-4. Ensure `jmap.allowedOrigins` contains only the HTTPS origin of the user's
+4. Ensure `jmap.allowedOrigins` contains only the HTTPS origin(s) of the user's
    Stalwart JMAP service. Do not include a path such as `/jmap/session`.
-5. Leave `fallback.allowManualServerEntry` false for a strict IRISA-only
+5. Leave `jmap.resourceOrigins` empty unless Stalwart intentionally serves JMAP
+   upload/download/event resources from a separate HTTPS host. Every such host
+   must be explicitly listed. The JMAP API endpoint itself must remain on the
+   selected mail-server origin.
+6. Leave `fallback.allowManualServerEntry` false for a strict IRISA-only
    distribution. Set it true only if administrators intentionally permit
    unlisted domains to use the legacy manual/discovery path.
-6. Never add a client secret, private key, access token, or refresh token.
+7. Never add a client secret, private key, access token, or refresh token.
 
 The file is loaded at Expo configuration time through
 `IRISA_ORGANIZATIONS_CONFIG` and embedded as public app configuration. It is
@@ -104,7 +115,7 @@ routing metadata, not a secret.
 
 ```bash
 cp config/organizations.example.json config/organizations.json
-IRISA_ORGANIZATIONS_CONFIG=config/organizations.json npx expo run:android
+IRISA_ORGANIZATIONS_CONFIG=config/organizations.json npx expo run:android --variant githubDebug
 ```
 
 ## Important deployment checks
