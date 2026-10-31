@@ -28,3 +28,29 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+  android-build:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+
+      - name: Build GitHub debug APK
+        working-directory: android
+        run: bash ./gradlew --no-daemon assembleGithubDebug
