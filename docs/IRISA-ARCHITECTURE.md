@@ -46,7 +46,7 @@ The organization map must be explicit. Never derive an issuer, OAuth client, org
 
 ## Organization configuration
 
-The canonical schema is `config/organizations.example.json`. It intentionally contains no production domains, tenant IDs, issuers, client IDs, or secrets.
+The template is `config/organizations.example.json`. It contains only reserved example values/placeholders, never production domains, tenant IDs, or credentials. `src/lib/organization-resolver.ts` validates the schema at runtime when supplied with the deployment configuration and performs exact domain matching.
 
 Each organization entry may define:
 - stable internal organization key;
@@ -56,7 +56,7 @@ Each organization entry may define:
 - allowed JMAP origins;
 - optional display name and branding key.
 
-Production configuration must be supplied by the build/release environment or a protected deployment configuration. Never commit client secrets, private keys, signing credentials, or user data.
+Production configuration must be supplied by the build/release environment or a protected deployment configuration. Never commit client secrets, private keys, signing credentials, or user data. The resolver rejects `clientSecret`/`client_secret` fields because a native mobile app is a public OAuth client.
 
 ## Notifications
 
@@ -123,8 +123,9 @@ The workflow in `.github/workflows/upstream-sync.yml` provides a manual/schedule
 - [ ] Enable branch protection and required CI checks in GitHub repository settings.
 
 ### Phase 1 — identity and organization routing
-- [ ] Implement organization resolver and strict domain allow-list.
-- [ ] Implement WSO2 OIDC provider and per-organization PKCE configuration.
+- [x] Implement a pure organization resolver with exact domain allow-list matching, HTTPS issuer/JMAP validation, duplicate-domain rejection, and client-secret rejection. Unit tests are committed; CI execution is pending.
+- [ ] Wire the resolver into the email-first login flow and load protected production organization configuration.
+- [ ] Implement WSO2 OIDC provider and per-organization PKCE configuration (the existing native PKCE flow currently discovers the mail server's own authorization server; it is not yet a WSO2 external-issuer integration).
 - [ ] Integrate direct JMAP login as a separately selectable provider.
 - [ ] Add unit and integration tests for unknown domains, issuer mismatch, account switching, and redirect validation.
 
