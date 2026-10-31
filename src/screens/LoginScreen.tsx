@@ -789,6 +789,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
             value={email}
             onChange={(value) => {
               setNotice(null);
+              setOrganization(null);
               setEmail(value);
             }}
             onSubmit={() => void handleEmailContinue()}
