@@ -587,7 +587,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
     } finally {
       if (endAttempt(attempt)) setBusy(null);
     }
-  }, [accessToken, beginAttempt, email, endAttempt, finishIfSignedIn, isAddMode, login, loginWithToken, password, serverInput, serverUrl, tokenMode, totp, totpRequired, t]);
+  }, [accessToken, beginAttempt, email, endAttempt, finishIfSignedIn, isAddMode, login, loginWithToken, organization, password, serverInput, serverUrl, tokenMode, totp, totpRequired, t]);
 
   // A sign-in code, however it arrived: scanned, pasted, or a tapped
   // `bulwarkmail://` link.
