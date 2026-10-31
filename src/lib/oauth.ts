@@ -34,6 +34,7 @@ export interface OAuthTokens {
   idToken?: string;
   /** External provider endpoints retained so refresh/revoke/logout target the issuing IdP. */
   issuer?: string;
+  externalProvider?: boolean;
   revocationEndpoint?: string;
   endSessionEndpoint?: string;
   logoutRedirectUri?: string;
@@ -866,6 +867,7 @@ export async function refreshOAuthAccessToken(tokens: OAuthTokens): Promise<OAut
           source: tokens.source,
           idToken: typeof data.id_token === 'string' && data.id_token ? data.id_token : tokens.idToken,
           issuer: tokens.issuer,
+          externalProvider: tokens.externalProvider,
           revocationEndpoint: tokens.revocationEndpoint,
           endSessionEndpoint: tokens.endSessionEndpoint,
           logoutRedirectUri: tokens.logoutRedirectUri,
