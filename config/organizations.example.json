@@ -11,7 +11,7 @@
       ],
       "oidc": {
         "enabled": true,
-        "issuer": "https://identity.example.invalid/oauth2/token",
+        "issuer": "https://identity.example.invalid/t/REPLACE_WITH_ROOT_ORG_HANDLE/oauth2/token",
         "organizationId": "",
         "organizationHandle": "REPLACE_WITH_WSO2_ORG_HANDLE",
         "clientId": "",
