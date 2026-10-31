@@ -214,7 +214,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       # Ties the APK to this commit and workflow run, which the signing key
-      # alone does not: `gh attestation verify <apk> --repo bulwarkmail/native`.
+      # alone does not: `gh attestation verify <apk> --repo hsaeidh/IRISA-Mail-mobile`.
       - name: Attest build provenance
         uses: actions/attest@v4
         with:
