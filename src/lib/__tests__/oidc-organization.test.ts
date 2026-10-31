@@ -124,6 +124,7 @@ describe('configured OIDC for WSO2 organizations', () => {
       clientId,
       redirectUri: 'ir.irisa.mail:/oauth/callback',
       logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
+      externalProvider: true,
       scopes: 'openid profile email offline_access',
       authorizationParams: { orgId: 'wso2-org-id-123' },
       requireIdToken: true,
