@@ -8,7 +8,7 @@
 // Environment:
 //   ASC_KEY_ID, ASC_ISSUER_ID   App Store Connect API key
 //   ASC_KEY_PATH                the .p8 file (default ~/private_keys/AuthKey_<id>.p8)
-//   BUNDLE_ID                   default org.bulwarkmail.mobile
+//   BUNDLE_ID                   default ir.irisa.mail
 //   TESTFLIGHT_GROUP            external group name (default "external")
 //   WHATS_NEW                   "What to Test" text (default: link to the GitHub release)
 //
@@ -34,9 +34,9 @@ if (!keyId || !issuer) {
 }
 const keyPath = process.env.ASC_KEY_PATH || path.join(os.homedir(), 'private_keys', `AuthKey_${keyId}.p8`);
 const privateKey = fs.readFileSync(keyPath, 'utf8');
-const bundleId = process.env.BUNDLE_ID || 'org.bulwarkmail.mobile';
+const bundleId = process.env.BUNDLE_ID || 'ir.irisa.mail';
 const groupName = process.env.TESTFLIGHT_GROUP || 'external';
-const repo = process.env.GITHUB_REPOSITORY || 'bulwarkmail/native';
+const repo = process.env.GITHUB_REPOSITORY || 'hsaeidh/IRISA-Mail-mobile';
 const whatsNew = process.env.WHATS_NEW || `Release notes: https://github.com/${repo}/releases/tag/${version}`;
 
 // Processing usually takes 5-30 minutes; give up well inside the job timeout.
