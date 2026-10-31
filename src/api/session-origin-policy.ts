@@ -18,7 +18,7 @@ export class JMAPSessionOriginError extends Error {
   readonly field: string;
 
   constructor(field: string) {
-    super(`JMAP session ${field} uses a URL or origin that is not allowed by the organization policy`);
+    super(`JMAP session ${field} uses an origin that is not allowed by the organization policy`);
     this.name = 'JMAPSessionOriginError';
     this.field = field;
   }
