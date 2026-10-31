@@ -313,7 +313,9 @@ export class JMAPClient {
     const baseUrl = serverUrl.replace(/\/+$/, '');
     const epoch = this.detachSession();
     if (totp) {
-      return this.connectWithTotp(baseUrl, username, password, totp, epoch, signal, allowedResourceOrigins);
+      return allowedResourceOrigins !== undefined
+        ? this.connectWithTotp(baseUrl, username, password, totp, epoch, signal, allowedResourceOrigins)
+        : this.connectWithTotp(baseUrl, username, password, totp, epoch, signal);
     }
     const credentials: StoredCredentials = {
       serverUrl: baseUrl, username, password,
@@ -365,7 +367,10 @@ export class JMAPClient {
     }
     // Signing in again would take the client back from a newer account change.
     this.assertCurrentSession(epoch);
-    const { session } = await this.connectWithOAuth(baseUrl, tokens, username, allowedResourceOrigins);
+    const connected = allowedResourceOrigins !== undefined
+      ? await this.connectWithOAuth(baseUrl, tokens, username, allowedResourceOrigins)
+      : await this.connectWithOAuth(baseUrl, tokens, username);
+    const { session } = connected;
     return session;
   }
 
