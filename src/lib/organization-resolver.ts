@@ -16,6 +16,7 @@ export interface OrganizationOidcConfig {
   organizationHandle?: string;
   clientId: string;
   redirectUri: string;
+  logoutRedirectUri?: string;
   scopes?: string[];
   legacyOrganizationSso?: boolean;
 }
@@ -113,8 +114,12 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     const issuer = oidc.enabled ? normalizedHttpsUrl(oidc.issuer) : null;
     const clientId = typeof oidc.clientId === 'string' ? oidc.clientId.trim() : '';
     const redirectUri = typeof oidc.redirectUri === 'string' ? oidc.redirectUri.trim() : '';
+    const logoutRedirectUri = typeof oidc.logoutRedirectUri === 'string' ? oidc.logoutRedirectUri.trim() : '';
     if (oidc.enabled && (!issuer || !clientId || !redirectUri || !/^[a-z][a-z0-9+.-]*:\/\//i.test(redirectUri))) {
       throw new Error(`Organization ${key} has incomplete or insecure OIDC settings`);
+    }
+    if (oidc.enabled && logoutRedirectUri && !/^[a-z][a-z0-9+.-]*:\/\//i.test(logoutRedirectUri) && !/^[a-z][a-z0-9+.-]*:\/[^/]/i.test(logoutRedirectUri)) {
+      throw new Error(`Organization ${key} has an invalid OIDC logout redirect URI`);
     }
     const organizationId = typeof oidc.organizationId === 'string' ? oidc.organizationId.trim() : '';
     const organizationHandle = typeof oidc.organizationHandle === 'string' ? oidc.organizationHandle.trim() : '';
@@ -154,6 +159,7 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
         ...(organizationHandle ? { organizationHandle } : {}),
         clientId,
         redirectUri,
+        ...(logoutRedirectUri ? { logoutRedirectUri } : {}),
         ...(scopes?.length ? { scopes } : {}),
         ...(oidc.legacyOrganizationSso === true ? { legacyOrganizationSso: true } : {}),
       },
