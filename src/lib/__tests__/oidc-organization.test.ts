@@ -28,6 +28,8 @@ const metadata: OAuthMetadata = {
   authorization_endpoint: 'https://identity.example.org/oauth2/authorize',
   token_endpoint: 'https://identity.example.org/oauth2/token',
   jwks_uri: 'https://identity.example.org/oauth2/jwks',
+  revocation_endpoint: 'https://identity.example.org/oauth2/revoke',
+  end_session_endpoint: 'https://identity.example.org/oidc/logout',
   scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
   id_token_signing_alg_values_supported: ['RS256'],
 };
@@ -115,6 +117,7 @@ describe('configured OIDC for WSO2 organizations', () => {
     const tokens = await loginWithPkce('https://mail.example.org', metadata, {
       clientId,
       redirectUri: 'ir.irisa.mail:/oauth/callback',
+      logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
       scopes: 'openid profile email offline_access',
       authorizationParams: { orgId: 'wso2-org-id-123' },
       requireIdToken: true,
@@ -129,6 +132,10 @@ describe('configured OIDC for WSO2 organizations', () => {
     expect(callbackUri).toBe('ir.irisa.mail:/oauth/callback');
     expect(tokens.accessToken).toBe('jmap-access-token');
     expect(tokens.idToken).toBe(signedToken);
+    expect(tokens.issuer).toBe(issuer);
+    expect(tokens.revocationEndpoint).toBe(metadata.revocation_endpoint);
+    expect(tokens.endSessionEndpoint).toBe(metadata.end_session_endpoint);
+    expect(tokens.logoutRedirectUri).toBe('ir.irisa.mail:/oauth/logout');
   });
 
   it('rejects a validly signed ID token with a mismatched nonce', async () => {
