@@ -524,8 +524,7 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
   if (tokens.source !== 'native') return Promise.resolve();
   const run = async () => {
     try {
-      const externalProvider = tokens.externalProvider ?? (!!tokens.tokenEndpoint && !!serverUrl &&
-        new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin);
+      const externalProvider = tokens.externalProvider === true;
       if (externalProvider && !tokens.logoutRedirectUri) return;
       const metadata = tokens.endSessionEndpoint
         ? { end_session_endpoint: tokens.endSessionEndpoint }
@@ -548,8 +547,7 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
 export async function revokeRefreshToken(serverUrl: string, tokens: OAuthTokens): Promise<void> {
   if (!tokens.refreshToken) return;
   try {
-    const externalProvider = tokens.externalProvider ?? (!!tokens.tokenEndpoint && !!serverUrl &&
-      new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin);
+    const externalProvider = tokens.externalProvider === true;
     const metadata = tokens.revocationEndpoint || externalProvider ? null : await discoverOAuthMetadata(serverUrl);
     const endpoint = tokens.revocationEndpoint ?? metadata?.revocation_endpoint;
     if (!endpoint || !/^https?:\/\//i.test(endpoint)) return;
