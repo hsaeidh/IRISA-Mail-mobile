@@ -670,6 +670,9 @@ export async function setStoredPushTransport(transport: PushTransport | null): P
   if (transport === 'fcm' && !getNative()) {
     throw new Error('FCM is not configured for this IRISA build');
   }
+  if (transport === 'unifiedpush' && !isUnifiedPushSupported()) {
+    throw new Error('UnifiedPush is not available on this device');
+  }
   if (!transport) {
     await AsyncStorage.removeItem(PUSH_TRANSPORT_KEY);
   } else {
@@ -681,8 +684,11 @@ export async function getEffectivePushTransport(): Promise<PushTransport> {
   // iOS has one way in: APNs, through the relay.
   if (Platform.OS === 'ios') return 'apns';
   const stored = await getStoredPushTransport();
-  if (stored === 'fcm' && !getNative()) return 'unifiedpush';
-  return stored ?? (getNative() ? 'fcm' : 'unifiedpush');
+  const fcmAvailable = getNative() !== null;
+  const unifiedPushAvailable = isUnifiedPushSupported();
+  if (stored === 'fcm' && !fcmAvailable) return 'unifiedpush';
+  if (stored === 'unifiedpush' && !unifiedPushAvailable && fcmAvailable) return 'fcm';
+  return stored ?? (fcmAvailable ? 'fcm' : 'unifiedpush');
 }
 
 export interface PushSetupParams {
