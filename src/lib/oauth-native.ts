@@ -34,9 +34,149 @@ export interface OAuthMetadata {
   registration_endpoint?: string;
   scopes_supported?: string[];
   prompt_values_supported?: string[];
+  jwks_uri?: string;
+  id_token_signing_alg_values_supported?: string[];
 }
 
 const DISCOVERY_TIMEOUT_MS = 8_000;
+
+const OIDC_METADATA_TIMEOUT_MS = 8_000;
+
+function isHttpsEndpoint(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Strict OIDC discovery for a configured issuer (for example WSO2 IS's
+ * https://id.example/oauth2/token issuer). Unlike mail-server discovery this
+ * never accepts a redirect, issuer substitution, or endpoints on another
+ * origin.
+ */
+export async function discoverConfiguredOidcMetadata(issuer: string): Promise<OAuthMetadata> {
+  if (!isHttpsEndpoint(issuer)) throw new HandoffError('The configured OIDC issuer must use HTTPS');
+  const normalizedIssuer = issuer.replace(/\/+$/, '');
+  const metadataUrl = `${normalizedIssuer}/.well-known/openid-configuration`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), OIDC_METADATA_TIMEOUT_MS);
+  try {
+    const response = await secureFetch(metadataUrl, {
+      headers: { Accept: 'application/json' },
+      redirect: 'error',
+      signal: controller.signal,
+      timeoutMs: OIDC_METADATA_TIMEOUT_MS,
+    });
+    if (!response.ok || response.url !== metadataUrl || response.redirected) {
+      throw new HandoffError('Could not securely load the configured OIDC metadata');
+    }
+    const data = (await response.json()) as Partial<OAuthMetadata>;
+    if (data.issuer !== normalizedIssuer) throw new HandoffError('OIDC metadata issuer does not match the configured issuer');
+    const endpoints = [data.authorization_endpoint, data.token_endpoint, data.jwks_uri];
+    if (!endpoints.every(isHttpsEndpoint)) {
+      throw new HandoffError('OIDC metadata must provide HTTPS authorization, token and JWKS endpoints');
+    }
+    const issuerOrigin = new URL(normalizedIssuer).origin;
+    if (endpoints.some((endpoint) => new URL(endpoint as string).origin !== issuerOrigin)) {
+      throw new HandoffError('OIDC endpoints must be hosted on the configured issuer origin');
+    }
+    if (data.id_token_signing_alg_values_supported?.length &&
+      !data.id_token_signing_alg_values_supported.includes('RS256')) {
+      throw new HandoffError('The configured OIDC provider does not advertise RS256 ID-token signing');
+    }
+    return data as OAuthMetadata;
+  } catch (err) {
+    if (err instanceof HandoffError) throw err;
+    throw new HandoffError(`OIDC discovery failed: ${err instanceof Error ? err.message : String(err)}`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function decodeJwtPart<T>(part: string): T {
+  const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+  const bytes = Buffer.from(padded, 'base64');
+  return JSON.parse(bytes.toString('utf8')) as T;
+}
+
+interface OidcIdTokenClaims {
+  iss?: string;
+  sub?: string;
+  aud?: string | string[];
+  azp?: string;
+  exp?: number;
+  iat?: number;
+  nbf?: number;
+  nonce?: string;
+}
+
+interface OidcJwk {
+  kty?: string;
+  kid?: string;
+  use?: string;
+  alg?: string;
+  n?: string;
+  e?: string;
+  key_ops?: string[];
+}
+
+async function verifyConfiguredIdToken(
+  idToken: string,
+  metadata: OAuthMetadata,
+  clientId: string,
+  expectedNonce: string,
+): Promise<void> {
+  const parts = idToken.split('.');
+  if (parts.length !== 3 || !metadata.jwks_uri) throw new HandoffError('Invalid OIDC ID token');
+  const header = decodeJwtPart<{ alg?: string; kid?: string; typ?: string }>(parts[0]);
+  const claims = decodeJwtPart<OidcIdTokenClaims>(parts[1]);
+  if (header.alg !== 'RS256' || !header.kid) {
+    throw new HandoffError('OIDC ID token must use a keyed RS256 signature');
+  }
+  const jwksResponse = await secureFetch(metadata.jwks_uri, {
+    headers: { Accept: 'application/json' },
+    redirect: 'error',
+    timeoutMs: OIDC_METADATA_TIMEOUT_MS,
+  });
+  if (!jwksResponse.ok || jwksResponse.url !== metadata.jwks_uri || jwksResponse.redirected) {
+    throw new HandoffError('Could not securely load OIDC signing keys');
+  }
+  const jwks = (await jwksResponse.json()) as { keys?: OidcJwk[] };
+  const jwk = jwks.keys?.find((key) => key.kid === header.kid && key.kty === 'RSA' &&
+    (!key.use || key.use === 'sig') && (!key.alg || key.alg === 'RS256') &&
+    (!key.key_ops || key.key_ops.includes('verify')) && !!key.n && !!key.e);
+  if (!jwk) throw new HandoffError('No matching RSA signing key was published by the OIDC provider');
+
+  const cryptoApi = (globalThis as { crypto?: Crypto }).crypto;
+  if (!cryptoApi?.subtle) throw new HandoffError('Secure cryptographic verification is unavailable on this device');
+  const key = await cryptoApi.subtle.importKey(
+    'jwk',
+    jwk as JsonWebKey,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  );
+  const signature = new Uint8Array(Buffer.from(parts[2].replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - parts[2].length % 4) % 4), 'base64'));
+  const signed = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+  const valid = await cryptoApi.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, key, signature, signed);
+  if (!valid) throw new HandoffError('OIDC ID-token signature verification failed');
+
+  const now = Math.floor(Date.now() / 1000);
+  const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+  if (claims.iss !== metadata.issuer || !claims.sub ||
+    !audience.includes(clientId) || (audience.length > 1 && claims.azp !== clientId) ||
+    typeof claims.exp !== 'number' || claims.exp <= now - 30 ||
+    typeof claims.iat !== 'number' || claims.iat > now + 300 ||
+    (typeof claims.nbf === 'number' && claims.nbf > now + 30) ||
+    claims.nonce !== expectedNonce) {
+    throw new HandoffError('OIDC ID-token claims validation failed');
+  }
+}
 
 function withTimeout(ms: number): { signal?: AbortSignal; done: () => void } {
   if (typeof AbortController === 'undefined') return { done: () => undefined };
@@ -199,7 +339,7 @@ function registrationEndpoint(metadata: OAuthMetadata): string | undefined {
 export async function loginWithPkce(
   serverUrl: string,
   metadata: OAuthMetadata,
-  opts?: { clientId?: string; scopes?: string; redirectUri?: string; addAccount?: boolean },
+  opts?: { clientId?: string; scopes?: string; redirectUri?: string; addAccount?: boolean; authorizationParams?: Record<string, string>; requireIdToken?: boolean },
 ): Promise<OAuthTokens> {
   const client = opts?.clientId
     ? { clientId: opts.clientId, redirectUri: opts.redirectUri ?? HANDOFF_REDIRECT_URI }
@@ -208,6 +348,7 @@ export async function loginWithPkce(
   const verifier = generateCodeVerifier();
   const challenge = generateCodeChallenge(verifier);
   const state = randomHex(16);
+  const nonce = opts?.requireIdToken ? randomHex(16) : undefined;
   const scope = opts?.scopes ?? pkceScopes(metadata);
 
   const params = new URLSearchParams({
@@ -220,6 +361,13 @@ export async function loginWithPkce(
     code_challenge_method: 'S256',
   });
   if (opts?.addAccount) params.set('prompt', addAccountPrompt(metadata));
+  if (nonce) params.set('nonce', nonce);
+  for (const [key, value] of Object.entries(opts?.authorizationParams ?? {})) {
+    if (!/^(orgId|orgHandle|fidp|login_hint)$/.test(key) || !value.trim()) {
+      throw new HandoffError('Unsupported or empty OIDC authorization parameter');
+    }
+    params.set(key, value);
+  }
   const authUrl = `${metadata.authorization_endpoint}${metadata.authorization_endpoint.includes('?') ? '&' : '?'}${params.toString()}`;
 
   const result = await WebBrowser.openAuthSessionAsync(
@@ -271,6 +419,10 @@ export async function loginWithPkce(
     id_token?: string;
   };
   if (!data.access_token) throw new HandoffError('Token response missing access_token');
+  if (opts?.requireIdToken) {
+    if (!data.id_token || !nonce) throw new HandoffError('OIDC token response missing ID token');
+    await verifyConfiguredIdToken(data.id_token, metadata, clientId, nonce);
+  }
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
