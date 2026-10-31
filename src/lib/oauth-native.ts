@@ -23,6 +23,7 @@ import {
   REGISTERED_REDIRECT_URI,
 } from './totp-login';
 import { randomHex } from './random';
+import { toArrayBuffer } from './crypto/provider';
 import { NetworkError } from '../api/jmap-client';
 
 export interface OAuthMetadata {
@@ -184,7 +185,12 @@ async function verifyConfiguredIdToken(
   );
   const signature = decodeBase64Url(parts[2]);
   const signed = Uint8Array.from(`${parts[0]}.${parts[1]}`, (char) => char.charCodeAt(0));
-  const valid = await cryptoApi.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, key, signature, signed);
+  const valid = await cryptoApi.subtle.verify(
+    { name: 'RSASSA-PKCS1-v1_5' },
+    key,
+    toArrayBuffer(signature),
+    toArrayBuffer(signed),
+  );
   if (!valid) throw new HandoffError('OIDC ID-token signature verification failed');
 
   const now = Math.floor(Date.now() / 1000);
