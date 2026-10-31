@@ -46,6 +46,11 @@ yarn-error.*
 # Deployment-specific organization routing (keep the example template tracked)
 /config/organizations.json
 
+# IRISA Firebase project configuration is deployment-specific
+/android/app/google-services.json
+/android/app/src/**/google-services.json
+/ios/GoogleService-Info.plist
+
 # typescript
 *.tsbuildinfo
 
