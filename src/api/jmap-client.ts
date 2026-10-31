@@ -16,6 +16,7 @@ import {
   type OAuthTokenSource,
 } from '../lib/oauth';
 import { FirstTouchGate } from './first-touch-gate';
+import { validateJmapSessionOrigins } from './session-origin-policy';
 import { downloadNameSegment } from './download-name';
 import { writeSharedSecret, moveToSharedGroup } from '../lib/ios-push-shared';
 import { beginOwnWrite, recordOwnEmailWrites } from './own-writes';
@@ -77,6 +78,8 @@ export interface StoredCredentials {
   // The OIDC id token of a browser sign-in, for ending the provider's
   // session at sign-out (lib/oauth-native endProviderSession).
   idToken?: string;
+  /** Defined (including []) for managed IRISA sessions; undefined preserves generic-server behavior. */
+  allowedResourceOrigins?: string[];
 }
 
 /**
@@ -305,13 +308,17 @@ export class JMAPClient {
     totp?: string,
     /** Cancels the token requests of a TOTP sign-in (the sign-in screen's Cancel). */
     signal?: AbortSignal,
+    allowedResourceOrigins?: string[],
   ): Promise<JMAPSession> {
     const baseUrl = serverUrl.replace(/\/+$/, '');
     const epoch = this.detachSession();
     if (totp) {
-      return this.connectWithTotp(baseUrl, username, password, totp, epoch, signal);
+      return this.connectWithTotp(baseUrl, username, password, totp, epoch, signal, allowedResourceOrigins);
     }
-    const credentials: StoredCredentials = { serverUrl: baseUrl, username, password };
+    const credentials: StoredCredentials = {
+      serverUrl: baseUrl, username, password,
+      ...(allowedResourceOrigins !== undefined ? { allowedResourceOrigins } : {}),
+    };
     this.credentials = credentials;
 
     const fetched = await this.fetchSession(baseUrl);
@@ -342,6 +349,7 @@ export class JMAPClient {
     totp: string,
     epoch: number,
     signal?: AbortSignal,
+    allowedResourceOrigins?: string[],
   ): Promise<JMAPSession> {
     const { exchangePasswordForTokens, LoginEndpointMissingError } = await import('../lib/totp-login');
     let tokens: OAuthTokens;
@@ -357,7 +365,7 @@ export class JMAPClient {
     }
     // Signing in again would take the client back from a newer account change.
     this.assertCurrentSession(epoch);
-    const { session } = await this.connectWithOAuth(baseUrl, tokens, username);
+    const { session } = await this.connectWithOAuth(baseUrl, tokens, username, allowedResourceOrigins);
     return session;
   }
 
@@ -370,10 +378,14 @@ export class JMAPClient {
   async connectWithToken(
     serverUrl: string,
     accessToken: string,
+    allowedResourceOrigins?: string[],
   ): Promise<{ session: JMAPSession; username: string; accountId: string }> {
     const baseUrl = serverUrl.replace(/\/+$/, '');
     const epoch = this.detachSession();
-    this.credentials = { serverUrl: baseUrl, username: '', password: '', accessToken };
+    this.credentials = {
+      serverUrl: baseUrl, username: '', password: '', accessToken,
+      ...(allowedResourceOrigins !== undefined ? { allowedResourceOrigins } : {}),
+    };
 
     let fetched: JMAPSession;
     try {
@@ -417,6 +429,7 @@ export class JMAPClient {
     serverUrl: string,
     tokens: OAuthTokens,
     preferredUsername?: string,
+    allowedResourceOrigins?: string[],
   ): Promise<{ session: JMAPSession; username: string; accountId: string }> {
     const baseUrl = serverUrl.replace(/\/+$/, '');
     const epoch = this.detachSession();
@@ -431,6 +444,7 @@ export class JMAPClient {
       clientId: tokens.clientId,
       tokenSource: tokens.source,
       ...(tokens.idToken ? { idToken: tokens.idToken } : {}),
+      ...(allowedResourceOrigins !== undefined ? { allowedResourceOrigins } : {}),
     };
 
     const fetched = await this.fetchSession(baseUrl);
@@ -1111,6 +1125,12 @@ export class JMAPClient {
       Object.keys(session.accounts ?? {}).length > 0;
     if (!hasAccount) {
       throw new AuthenticationError('Invalid credentials');
+    }
+    // In managed IRISA organizations, do not let a session document redirect
+    // authenticated API or blob traffic to an unapproved host.
+    const allowedResourceOrigins = this.credentials?.allowedResourceOrigins;
+    if (allowedResourceOrigins !== undefined) {
+      validateJmapSessionOrigins(session, baseUrl, allowedResourceOrigins);
     }
     return session;
   }
