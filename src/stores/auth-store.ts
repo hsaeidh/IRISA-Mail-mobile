@@ -34,7 +34,8 @@ import {
   forgetRefreshRotations,
   type HandoffResult,
 } from '../lib/oauth';
-import { discoverOAuthMetadata, endProviderSession, loginWithPkce, probeWebmail, revokeRefreshToken } from '../lib/oauth-native';
+import { discoverConfiguredOidcMetadata, discoverOAuthMetadata, endProviderSession, loginWithPkce, probeWebmail, revokeRefreshToken } from '../lib/oauth-native';
+import type { OrganizationOidcConfig } from '../lib/organization-resolver';
 import {
   teardownPushNotifications,
   teardownPushNotificationsForAccount,
@@ -124,6 +125,8 @@ export interface AuthState {
   loginViaWebmail: (webmailUrl: string, opts?: SignInOptions) => Promise<void>;
   /** OAuth/OIDC (PKCE) straight against the mail server's authorization server. */
   loginViaOAuth: (serverUrl: string, opts?: SignInOptions) => Promise<void>;
+  /** WSO2/external OIDC for a pre-resolved organization, then JMAP Bearer sign-in. */
+  loginViaOrganizationOidc: (serverUrl: string, oidc: OrganizationOidcConfig, opts?: SignInOptions) => Promise<void>;
   loginViaPairing: (webmailUrl: string, code: string, opts?: SignInOptions) => Promise<void>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
@@ -781,6 +784,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await completeOAuthHandoff(set, get, result, { ...opts, webmailUrl });
     } catch (err) {
       set({ isLoading: false, error: oauthSignInMessage(err) });
+      throw err;
+    }
+  },
+
+  loginViaOrganizationOidc: async (serverUrl, oidc, opts) => {
+    set({ isLoading: true, error: null });
+    refuseAddWhenFull(set, opts);
+    const base = serverUrl.replace(/\\/+$/, '');
+    try {
+      if (!oidc.enabled || !oidc.issuer || !oidc.clientId || !oidc.redirectUri) {
+        throw new HandoffError('Organization OIDC is not fully configured');
+      }
+      if (!oidc.organizationId && !oidc.organizationHandle) {
+        throw new HandoffError('Organization OIDC is missing its WSO2 organization identifier');
+      }
+      const metadata = await abortable(discoverConfiguredOidcMetadata(oidc.issuer), opts?.signal);
+      cancelledSignIn(set, opts);
+      const authorizationParams: Record<string, string> = {};
+      if (oidc.organizationId) authorizationParams.orgId = oidc.organizationId;
+      else if (oidc.organizationHandle) authorizationParams.orgHandle = oidc.organizationHandle;
+      // WSO2 legacy Organization SSO deployments require this selector;
+      // enhanced organization authentication uses orgId/orgHandle directly.
+      if ((oidc as OrganizationOidcConfig & { legacyOrganizationSso?: boolean }).legacyOrganizationSso) {
+        authorizationParams.fidp = 'OrganizationSSO';
+      }
+      const tokens = await loginWithPkce(base, metadata, {
+        clientId: oidc.clientId,
+        redirectUri: oidc.redirectUri,
+        scopes: oidc.scopes?.join(' ') || 'openid profile email offline_access',
+        authorizationParams,
+        requireIdToken: true,
+        addAccount: opts?.addAccount,
+      });
+      cancelledSignIn(set, opts);
+      await completeOAuthHandoff(set, get, { flow: 'oauth', serverUrl: base, tokens }, opts);
+    } catch (err) {
+      if (err instanceof HandoffCancelledError) {
+        set({ isLoading: false, error: null });
+        return;
+      }
+      if (isSignInCancelled(err)) {
+        set({ isLoading: false, error: null });
+        throw err;
+      }
+      set({ isLoading: false, error: oauthSignInMessage(err) ?? 'Organization sign-in failed' });
       throw err;
     }
   },
