@@ -845,6 +845,7 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
             password={password}
             onChangeEmail={(value) => {
               setNotice(null);
+              setOrganization(null);
               setEmail(value);
             }}
             onChangePassword={(value) => {
