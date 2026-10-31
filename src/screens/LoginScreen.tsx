@@ -440,8 +440,8 @@ export default function LoginScreen({ onLogin, isAddMode = false, onCancel }: Lo
       setBusy('browser');
       const wasAuthenticated = useAuthStore.getState().isAuthenticated;
       try {
-        await loginViaOrganizationOidc(target, oidc, { addAccount: isAddMode, signal: attempt.signal });
-        if (!isLive(attempt)) return;
+        const signedIn = await loginViaOrganizationOidc(target, oidc, { addAccount: isAddMode, signal: attempt.signal });
+        if (!isLive(attempt) || !signedIn) return;
         finishIfSignedIn(wasAuthenticated);
       } catch (err) {
         if (!isLive(attempt) || isSignInCancelled(err)) return;
