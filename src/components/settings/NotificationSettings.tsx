@@ -394,17 +394,19 @@ export function NotificationSettings() {
                     {t('settings.notifications.push.transport_fcm', 'Firebase (FCM)')}
                   </Button>
                 )}
-                <Button
-                  variant={transport === 'unifiedpush' ? 'default' : 'outline'}
-                  size="sm"
-                  onPress={() => void handleSelectTransport('unifiedpush')}
-                  disabled={busy}
-                >
-                  {t('settings.notifications.push.transport_unifiedpush', 'UnifiedPush')}
-                </Button>
+                {upSupported && (
+                  <Button
+                    variant={transport === 'unifiedpush' ? 'default' : 'outline'}
+                    size="sm"
+                    onPress={() => void handleSelectTransport('unifiedpush')}
+                    disabled={busy}
+                  >
+                    {t('settings.notifications.push.transport_unifiedpush', 'UnifiedPush')}
+                  </Button>
+                )}
               </View>
             </SettingItem>
-            {transport === 'unifiedpush' && distributors.length === 0 && (
+            {upSupported && transport === 'unifiedpush' && distributors.length === 0 && (
               <Text style={styles.errorText}>
                 {t(
                   'settings.notifications.push.up_no_distributor',
@@ -412,7 +414,7 @@ export function NotificationSettings() {
                 )}
               </Text>
             )}
-            {transport === 'unifiedpush' && distributors.length > 1 && (
+            {upSupported && transport === 'unifiedpush' && distributors.length > 1 && (
               <SettingItem
                 label={t('settings.notifications.push.up_distributor_label', 'Distributor')}
                 description={t(
