@@ -35,9 +35,10 @@ organization's application).
 
 Configure:
 
-- Application/client type: **Native / public client** (not confidential).
+- Application/client type: **Mobile Application / public client** (not confidential).
 - Grant: **Authorization Code**.
-- PKCE: require S256 where the WSO2 application settings expose that option.
+- PKCE: mandatory, using S256.
+- ID-token signing: RS256. Do not enable ID-token encryption/JWE for this client; the app deliberately rejects encrypted or non-RS256 ID tokens rather than accepting an unverified token.
 - Redirect URI, exactly:
 
   `ir.irisa.mail:/oauth/callback`
@@ -123,6 +124,8 @@ IRISA_ORGANIZATIONS_CONFIG=config/organizations.json npx expo run:android
 
 ## References
 
-- [WSO2 IS 7.1 OIDC discovery guide](https://is.docs.wso2.com/en/7.1.0/guides/authentication/oidc/discover-oidc-configs/)
+- [WSO2 IS 7.3 OIDC discovery](https://is.docs.wso2.com/en/latest/guides/authentication/oidc/discover-oidc-configs/)
+- [Register a mobile app](https://is.docs.wso2.com/en/latest/guides/applications/register-mobile-app/)
 - [WSO2 IS organization discovery](https://is.docs.wso2.com/en/latest/guides/organization-management/organization-discovery/organization-discovery/)
 - [WSO2 IS organization-based login](https://is.docs.wso2.com/en/next/guides/organization-management/organization-login/)
+- [WSO2 IS OIDC settings and PKCE](https://is.docs.wso2.com/en/next/references/app-settings/oidc-settings-for-app/)
