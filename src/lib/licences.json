@@ -47,6 +47,12 @@
       "url": "https://github.com/PeculiarVentures/ASN1.js"
     },
     {
+      "name": "Atkinson Hyperlegible Next",
+      "version": "",
+      "license": "OFL-1.1",
+      "url": "https://github.com/googlefonts/atkinson-hyperlegible-next"
+    },
+    {
       "name": "date-fns",
       "version": "4.4.0",
       "license": "MIT",
@@ -69,6 +75,12 @@
       "version": "8.0.8",
       "license": "MIT",
       "url": "https://docs.expo.dev/versions/latest/sdk/clipboard"
+    },
+    {
+      "name": "expo-constants",
+      "version": "18.0.14",
+      "license": "MIT",
+      "url": "https://github.com/expo/expo"
     },
     {
       "name": "expo-crypto",
@@ -167,6 +179,18 @@
       "url": "https://github.com/Stuk/jszip"
     },
     {
+      "name": "Lexend",
+      "version": "",
+      "license": "OFL-1.1",
+      "url": "https://github.com/googlefonts/lexend"
+    },
+    {
+      "name": "OpenDyslexic",
+      "version": "",
+      "license": "OFL-1.1",
+      "url": "https://opendyslexic.org"
+    },
+    {
       "name": "openpgp",
       "version": "6.3.2",
       "license": "LGPL-3.0+",
@@ -257,34 +281,16 @@
       "url": "https://github.com/react-native-webview/react-native-webview"
     },
     {
-      "name": "zustand",
-      "version": "5.0.16",
-      "license": "MIT",
-      "url": "https://github.com/pmndrs/zustand"
-    },
-    {
       "name": "Tabler Icons",
       "version": "",
       "license": "MIT",
       "url": "https://tabler.io/icons"
     },
     {
-      "name": "Atkinson Hyperlegible Next",
-      "version": "",
-      "license": "OFL-1.1",
-      "url": "https://github.com/googlefonts/atkinson-hyperlegible-next"
-    },
-    {
-      "name": "Lexend",
-      "version": "",
-      "license": "OFL-1.1",
-      "url": "https://github.com/googlefonts/lexend"
-    },
-    {
-      "name": "OpenDyslexic",
-      "version": "",
-      "license": "OFL-1.1",
-      "url": "https://opendyslexic.org"
+      "name": "zustand",
+      "version": "5.0.16",
+      "license": "MIT",
+      "url": "https://github.com/pmndrs/zustand"
     }
   ]
 }
