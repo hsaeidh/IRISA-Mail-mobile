@@ -492,7 +492,7 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
       if (externalProvider && !tokens.logoutRedirectUri) return;
       const metadata = tokens.endSessionEndpoint
         ? { end_session_endpoint: tokens.endSessionEndpoint }
-        : await discoverOAuthMetadata(serverUrl);
+        : externalProvider ? null : await discoverOAuthMetadata(serverUrl);
       const target = metadata ? buildEndSessionUrl(serverUrl, metadata, tokens) : null;
       if (!target) return;
       await WebBrowser.openAuthSessionAsync(target.url, target.returnUrl);
@@ -511,7 +511,9 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
 export async function revokeRefreshToken(serverUrl: string, tokens: OAuthTokens): Promise<void> {
   if (!tokens.refreshToken) return;
   try {
-    const metadata = tokens.revocationEndpoint ? null : await discoverOAuthMetadata(serverUrl);
+    const externalProvider = !!tokens.tokenEndpoint && !!serverUrl &&
+      new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin;
+    const metadata = tokens.revocationEndpoint || externalProvider ? null : await discoverOAuthMetadata(serverUrl);
     const endpoint = tokens.revocationEndpoint ?? metadata?.revocation_endpoint;
     if (!endpoint || !/^https?:\/\//i.test(endpoint)) return;
     if (tokens.revocationEndpoint && tokens.tokenEndpoint &&
