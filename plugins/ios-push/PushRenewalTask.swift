@@ -13,7 +13,7 @@ import UIKit
 /// in Info.plist (BGTaskSchedulerPermittedIdentifiers, UIBackgroundModes
 /// fetch).
 enum PushRenewalTask {
-  static let identifier = "org.bulwarkmail.mobile.push-renewal"
+  static let identifier = "ir.irisa.mail.push-renewal"
   /// A subscription lasts seven days; asking twice a day leaves iOS room to
   /// skip runs (it decides when, and whether, the task runs).
   static let interval: TimeInterval = 12 * 60 * 60
