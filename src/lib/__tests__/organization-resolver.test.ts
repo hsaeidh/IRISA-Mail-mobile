@@ -87,6 +87,26 @@ describe('organization resolver', () => {
     })).toThrow(/incomplete or insecure OIDC/);
   });
 
+  it('rejects client secrets in mobile organization configuration', () => {
+    expect(() => validateOrganizationConfig({
+      schemaVersion: 1,
+      organizations: [{
+        key: 'secret',
+        displayName: 'Secret',
+        emailDomains: ['secret.example'],
+        oidc: {
+          enabled: true,
+          issuer: 'https://identity.example',
+          organizationHandle: 'secret',
+          clientId: 'public-client',
+          clientSecret: 'must-never-be-shipped',
+          redirectUri: 'irisamail://oauth/callback',
+        },
+        jmap: { enabled: false, allowedOrigins: [] },
+      }],
+    })).toThrow(/must not contain an OIDC client secret/);
+  });
+
   it('requires an organization routing identifier for enabled OIDC', () => {
     expect(() => validateOrganizationConfig({
       schemaVersion: 1,
