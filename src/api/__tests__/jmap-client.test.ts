@@ -217,6 +217,7 @@ describe('JMAPClient', () => {
         apiUrl: 'https://api.fastmail.com/jmap/api/',
         downloadUrl: 'https://www.fastmailusercontent.com/jmap/download/{accountId}/{blobId}/{name}?type={type}',
         uploadUrl: 'https://api.fastmail.com/jmap/upload/{accountId}/',
+        eventSourceUrl: 'https://api.fastmail.com/jmap/eventsource/?types={types}',
       };
       global.fetch = mockFetch([{ status: 200, json: externalResourceSession }]) as any;
 
