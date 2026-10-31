@@ -24,7 +24,7 @@ const IOS_BUILD_NUMBER = process.env.IOS_BUILD_NUMBER || '1';
 
 // Apple team: prefixes the keychain groups the app shares with its
 // notification service extension (plugins/ios-push). Not a secret.
-const APPLE_TEAM_ID = process.env.APPLE_TEAM_ID || '8ZANF9LQ39';
+const APPLE_TEAM_ID = process.env.APPLE_TEAM_ID || '';
 // Which APNs host the device tokens belong to: TestFlight and App Store builds
 // use production, simulators and development builds the sandbox.
 const APS_ENVIRONMENT = process.env.APS_ENVIRONMENT === 'development' ? 'development' : 'production';
@@ -35,6 +35,8 @@ const APS_ENVIRONMENT = process.env.APS_ENVIRONMENT === 'development' ? 'develop
  * specific file with IRISA_ORGANIZATIONS_CONFIG; no example config is bundled
  * into a release by default.
  */
+const HAS_ANDROID_GOOGLE_SERVICES = fs.existsSync(path.join(__dirname, 'android/app/google-services.json'));
+
 let IRISA_ORGANIZATIONS = null;
 if (process.env.IRISA_ORGANIZATIONS_CONFIG) {
   const configPath = path.resolve(__dirname, process.env.IRISA_ORGANIZATIONS_CONFIG);
@@ -47,8 +49,8 @@ if (process.env.IRISA_ORGANIZATIONS_CONFIG) {
 
 module.exports = {
   expo: {
-    name: 'Bulwark Mobile',
-    slug: 'bulwark-mobile',
+    name: 'IRISA Mail',
+    slug: 'irisa-mail',
     // mailto: lets Android/iOS offer the app for mail links in other apps;
     // bulwarkmail: is the webmail's sign-in link (bulwarkmail://pair?...).
     // org.bulwarkmail.mobile: is where Stalwart 1.0 sends the browser sign-in
@@ -71,7 +73,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'org.bulwarkmail.mobile',
+      bundleIdentifier: 'ir.irisa.mail',
       buildNumber: IOS_BUILD_NUMBER,
       config: {
         // PGP and S/MIME (#58) add end-to-end encryption beyond HTTPS/TLS,
@@ -87,7 +89,7 @@ module.exports = {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      package: 'com.anonymous.bulwarkmobile',
+      package: 'ir.irisa.mail',
       // The AsyncStorage database holds cached message bodies, the outbox and
       // the account registry; the platform backup would ship all of it to the
       // user's Google account. Credentials live in SecureStore (excluded by
@@ -109,7 +111,7 @@ module.exports = {
         'expo-camera',
         {
           cameraPermission:
-            'Bulwark Mail uses the camera to scan sign-in QR codes shown in webmail.',
+            'IRISA Mail uses the camera to scan supported sign-in QR codes.',
           // QR scanning never records audio; leaving the mic entry in would be
           // an unexplained permission in App Review.
           microphonePermission: false,
@@ -119,7 +121,7 @@ module.exports = {
         'expo-image-picker',
         {
           photosPermission:
-            'Bulwark Mail needs access to your photos so you can attach them to emails and set contact photos.',
+            'IRISA Mail needs access to your photos so you can attach them to emails and set contact photos.',
           // Only launchImageLibraryAsync is used - no in-app capture.
           cameraPermission: false,
           microphonePermission: false,
@@ -165,12 +167,13 @@ module.exports = {
       commit: COMMIT,
       // Settings → About → Source code. A modified build sets SOURCE_CODE_URL
       // to where its own source is (AGPL §13); the default is upstream.
-      sourceCodeUrl: process.env.SOURCE_CODE_URL || 'https://github.com/bulwarkmail/native',
+      sourceCodeUrl: process.env.SOURCE_CODE_URL || 'https://github.com/hsaeidh/IRISA-Mail-mobile',
       // src/lib/ios-push-shared.ts
-      iosSharedKeychainGroup: `${APPLE_TEAM_ID}.org.bulwarkmail.shared`,
-      iosAppKeychainGroup: `${APPLE_TEAM_ID}.org.bulwarkmail.mobile`,
+      iosSharedKeychainGroup: APPLE_TEAM_ID ? `${APPLE_TEAM_ID}.ir.irisa.mail.shared` : null,
+      iosAppKeychainGroup: APPLE_TEAM_ID ? `${APPLE_TEAM_ID}.ir.irisa.mail` : null,
       apnsEnvironment: APS_ENVIRONMENT === 'development' ? 'sandbox' : 'production',
       irisaOrganizations: IRISA_ORGANIZATIONS,
+      fcmEnabled: HAS_ANDROID_GOOGLE_SERVICES,
     },
   },
 };
