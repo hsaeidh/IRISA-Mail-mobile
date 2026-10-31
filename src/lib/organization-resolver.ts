@@ -61,7 +61,8 @@ function normalizedIssuerUrl(value: unknown): string | null {
   const raw = value.trim();
   try {
     const url = new URL(raw);
-    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) return null;
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash ||
+      /REPLACE_WITH/i.test(raw) || /\\.(?:example|invalid)$/i.test(url.hostname)) return null;
     return raw;
   } catch {
     return null;
@@ -106,7 +107,8 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     const domains = item.emailDomains.map((value) => {
       if (typeof value !== 'string') throw new Error(`Organization ${key} has a non-string email domain`);
       const domain = normalizedEmailDomain(`user@${value.trim()}`);
-      if (!domain || domain !== value.trim().toLowerCase().replace(/\.$/, '')) {
+      if (!domain || /REPLACE_WITH/i.test(domain) || /\.(?:example|invalid)$/i.test(domain) ||
+        domain !== value.trim().toLowerCase().replace(/\.$/, '')) {
         throw new Error(`Organization ${key} has an invalid email domain: ${value}`);
       }
       if (seenDomains.has(domain)) throw new Error(`Email domain is assigned more than once: ${domain}`);
@@ -128,6 +130,9 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
 
     const issuer = oidc.enabled ? normalizedIssuerUrl(oidc.issuer) : null;
     const clientId = typeof oidc.clientId === 'string' ? oidc.clientId.trim() : '';
+    if (oidc.enabled && /REPLACE_WITH/i.test(clientId)) {
+      throw new Error(`Organization ${key} still contains a placeholder OIDC client ID`);
+    }
     const redirectUri = typeof oidc.redirectUri === 'string' ? oidc.redirectUri.trim() : '';
     const logoutRedirectUri = typeof oidc.logoutRedirectUri === 'string' ? oidc.logoutRedirectUri.trim() : '';
     if (oidc.enabled && (!issuer || !clientId || redirectUri !== IRISA_OIDC_REDIRECT_URI)) {
@@ -138,6 +143,9 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     }
     const organizationId = typeof oidc.organizationId === 'string' ? oidc.organizationId.trim() : '';
     const organizationHandle = typeof oidc.organizationHandle === 'string' ? oidc.organizationHandle.trim() : '';
+    if (oidc.enabled && (/REPLACE_WITH/i.test(organizationId) || /REPLACE_WITH/i.test(organizationHandle))) {
+      throw new Error(`Organization ${key} still contains a placeholder WSO2 organization identifier`);
+    }
     if (oidc.enabled && !organizationId && !organizationHandle) {
       throw new Error(`Organization ${key} must define an OIDC organizationId or organizationHandle`);
     }
@@ -150,6 +158,9 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
       const origin = normalizedHttpsUrl(value);
       if (!origin) throw new Error(`Organization ${key} has an invalid JMAP origin`);
       const parsed = new URL(origin);
+      if (/REPLACE_WITH/i.test(origin) || /\.(?:example|invalid)$/i.test(parsed.hostname)) {
+        throw new Error(`Organization ${key} still contains a placeholder JMAP origin`);
+      }
       if (parsed.pathname !== '/') throw new Error(`Organization ${key} JMAP entries must be origins, not paths`);
       return parsed.origin;
     });
