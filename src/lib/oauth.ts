@@ -865,6 +865,10 @@ export async function refreshOAuthAccessToken(tokens: OAuthTokens): Promise<OAut
           clientId: tokens.clientId,
           source: tokens.source,
           idToken: typeof data.id_token === 'string' && data.id_token ? data.id_token : tokens.idToken,
+          issuer: tokens.issuer,
+          revocationEndpoint: tokens.revocationEndpoint,
+          endSessionEndpoint: tokens.endSessionEndpoint,
+          logoutRedirectUri: tokens.logoutRedirectUri,
         };
         rememberRotation(cacheKey, next);
         return next;
