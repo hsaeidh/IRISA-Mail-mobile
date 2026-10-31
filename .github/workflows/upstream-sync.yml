@@ -1,0 +1,48 @@
+name: Sync upstream Bulwark
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 5 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch upstream main
+        run: |
+          git remote add upstream https://github.com/bulwarkmail/native.git
+          git fetch upstream main
+
+      - name: Update clean upstream mirror branch
+        run: |
+          git checkout -B upstream-sync upstream/main
+          git push --force-with-lease origin upstream-sync
+
+      - name: Open or update upstream integration PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh pr list --base development --head upstream-sync --state open --json number --jq 'length' | grep -q '^0$'; then
+            gh pr create \
+              --base development \
+              --head upstream-sync \
+              --title "chore: sync upstream Bulwark Native" \
+              --body "Automated upstream mirror update from bulwarkmail/native:main. Review conflicts, security-sensitive changes, native platform changes, and CI before merging. This PR is not auto-merged."
+          else
+            echo "An upstream integration PR is already open; its head branch has been updated."
+          fi
