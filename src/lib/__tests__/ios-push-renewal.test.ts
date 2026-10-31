@@ -104,7 +104,7 @@ describe('the config plugin wires the renewal into the app', () => {
     const plist = internals.setRenewalInfoPlist({ UIBackgroundModes: ['remote-notification'] }, { teamId: 'TEAM' });
     expect(plist.BGTaskSchedulerPermittedIdentifiers).toEqual(['ir.irisa.mail.push-renewal']);
     expect(plist.UIBackgroundModes).toEqual(['remote-notification', 'fetch']);
-    expect(plist.BulwarkKeychainGroup).toBe('TEAM.org.bulwarkmail.shared');
+    expect(plist.BulwarkKeychainGroup).toBe('TEAM.ir.irisa.mail.shared');
   });
 
   it('compiles the renewal into the extension and the app', () => {
