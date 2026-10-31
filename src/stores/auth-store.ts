@@ -791,7 +791,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loginViaOrganizationOidc: async (serverUrl, oidc, opts) => {
     set({ isLoading: true, error: null });
     refuseAddWhenFull(set, opts);
-    const base = serverUrl.replace(/\\/+$/, '');
+    const base = serverUrl.replace(/\/+$/, '');
     try {
       if (!oidc.enabled || !oidc.issuer || !oidc.clientId || !oidc.redirectUri) {
         throw new HandoffError('Organization OIDC is not fully configured');
@@ -806,7 +806,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       else if (oidc.organizationHandle) authorizationParams.orgHandle = oidc.organizationHandle;
       // WSO2 legacy Organization SSO deployments require this selector;
       // enhanced organization authentication uses orgId/orgHandle directly.
-      if ((oidc as OrganizationOidcConfig & { legacyOrganizationSso?: boolean }).legacyOrganizationSso) {
+      if (oidc.legacyOrganizationSso) {
         authorizationParams.fidp = 'OrganizationSSO';
       }
       const tokens = await loginWithPkce(base, metadata, {
