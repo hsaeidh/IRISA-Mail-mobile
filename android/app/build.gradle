@@ -36,7 +36,7 @@ if (appVersionCode < 1 || appVersionCode > 2100000000L) {
 
 /**
  * Release signing. The key never lives in the repo: CI passes it as
- * ORG_GRADLE_PROJECT_BULWARK_RELEASE_* environment variables, and a local
+ * ORG_GRADLE_PROJECT_IRISA_RELEASE_* environment variables, and a local
  * release build can set the same names with -P, in ~/.gradle/gradle.properties
  * or as plain environment variables. See docs/android-release.md.
  *
@@ -45,17 +45,17 @@ if (appVersionCode < 1 || appVersionCode > 2100000000L) {
  * by an "update" anyone can sign.
  */
 def releaseSigningNames = [
-    'BULWARK_RELEASE_STORE_FILE',
-    'BULWARK_RELEASE_STORE_PASSWORD',
-    'BULWARK_RELEASE_KEY_ALIAS',
-    'BULWARK_RELEASE_KEY_PASSWORD',
+    'IRISA_RELEASE_STORE_FILE',
+    'IRISA_RELEASE_STORE_PASSWORD',
+    'IRISA_RELEASE_KEY_ALIAS',
+    'IRISA_RELEASE_KEY_PASSWORD',
 ]
 def releaseSigning = releaseSigningNames.collectEntries { name ->
     [(name): (findProperty(name) ?: System.getenv(name))?.toString()]
 }
 def missingReleaseSigning = releaseSigningNames.findAll { !releaseSigning[it]?.trim() }
 def releaseSigningConfigured = missingReleaseSigning.isEmpty()
-def releaseStoreFile = releaseSigningConfigured ? file(releaseSigning.BULWARK_RELEASE_STORE_FILE.trim()) : null
+def releaseStoreFile = releaseSigningConfigured ? file(releaseSigning.IRISA_RELEASE_STORE_FILE.trim()) : null
 
 // Escape hatch for a local release build that never leaves the machine
 // (profiling, checking R8). It is refused whenever CI is set, so a stray flag
@@ -199,9 +199,9 @@ android {
         if (releaseSigningConfigured) {
             release {
                 storeFile releaseStoreFile
-                storePassword releaseSigning.BULWARK_RELEASE_STORE_PASSWORD
-                keyAlias releaseSigning.BULWARK_RELEASE_KEY_ALIAS
-                keyPassword releaseSigning.BULWARK_RELEASE_KEY_PASSWORD
+                storePassword releaseSigning.IRISA_RELEASE_STORE_PASSWORD
+                keyAlias releaseSigning.IRISA_RELEASE_KEY_ALIAS
+                keyPassword releaseSigning.IRISA_RELEASE_KEY_PASSWORD
             }
         }
     }
@@ -245,10 +245,10 @@ def releaseSigningHelp = [
     "Release builds are never signed with the debug key: it is the public React Native",
     "template key, so an APK signed with it can be replaced by anyone. Provide the release",
     "key as gradle properties (-P or ~/.gradle/gradle.properties) or environment variables:",
-    "  BULWARK_RELEASE_STORE_FILE       path to the keystore",
-    "  BULWARK_RELEASE_STORE_PASSWORD",
-    "  BULWARK_RELEASE_KEY_ALIAS",
-    "  BULWARK_RELEASE_KEY_PASSWORD",
+    "  IRISA_RELEASE_STORE_FILE       path to the keystore",
+    "  IRISA_RELEASE_STORE_PASSWORD",
+    "  IRISA_RELEASE_KEY_ALIAS",
+    "  IRISA_RELEASE_KEY_PASSWORD",
     "",
     onCi && allowDebugSignedRelease
         ? "allowDebugSignedRelease is ignored because CI is set: published builds must use the release key."
@@ -262,7 +262,7 @@ def checkReleaseSigning = tasks.register('checkReleaseSigning') {
     doLast {
         if (releaseSigningConfigured) {
             if (!releaseStoreFile.isFile()) {
-                throw new GradleException("BULWARK_RELEASE_STORE_FILE points to ${releaseStoreFile}, which does not exist.")
+                throw new GradleException("IRISA_RELEASE_STORE_FILE points to ${releaseStoreFile}, which does not exist.")
             }
         } else if (debugSignedRelease) {
             logger.warn("WARNING: this release build is signed with the PUBLIC debug key " +
