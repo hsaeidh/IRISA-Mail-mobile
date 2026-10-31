@@ -32,6 +32,11 @@ export interface OAuthTokens {
   // The OIDC id token of the sign-in, kept for ending the provider's
   // session at sign-out (id_token_hint). A refresh may hand out a new one.
   idToken?: string;
+  /** External provider endpoints retained so refresh/revoke/logout target the issuing IdP. */
+  issuer?: string;
+  revocationEndpoint?: string;
+  endSessionEndpoint?: string;
+  logoutRedirectUri?: string;
 }
 
 export type HandoffResult =
