@@ -25,7 +25,7 @@ describe('about links', () => {
     expect(describePlatform({ os: 'android', osVersion: 33 })).toBe('Android (API 33)');
   });
 
-  it('links the configured source, or upstream when none or a bad one is set', () => {
+  it('links the configured source, or IRISA repository when none or a bad one is set', () => {
     expect(sourceCodeUrl('https://git.example.org/me/bulwark')).toBe('https://git.example.org/me/bulwark');
     expect(sourceCodeUrl(undefined)).toBe(NATIVE_REPO_URL);
     expect(sourceCodeUrl('')).toBe(NATIVE_REPO_URL);
