@@ -17,6 +17,7 @@ export interface OrganizationOidcConfig {
   clientId: string;
   redirectUri: string;
   scopes?: string[];
+  legacyOrganizationSso?: boolean;
 }
 
 export interface OrganizationJmapConfig {
@@ -135,6 +136,12 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     if (jmap.enabled && allowedOrigins.length === 0) {
       throw new Error(`Organization ${key} must allow at least one JMAP origin`);
     }
+    if (oidc.enabled && (!jmap.enabled || allowedOrigins.length === 0)) {
+      throw new Error(`Organization ${key} needs an enabled JMAP origin to use external OIDC for mail sign-in`);
+    }
+    if (oidc.legacyOrganizationSso !== undefined && typeof oidc.legacyOrganizationSso !== 'boolean') {
+      throw new Error(`Organization ${key} legacyOrganizationSso must be a boolean`);
+    }
 
     return {
       key,
@@ -148,6 +155,7 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
         clientId,
         redirectUri,
         ...(scopes?.length ? { scopes } : {}),
+        ...(oidc.legacyOrganizationSso === true ? { legacyOrganizationSso: true } : {}),
       },
       jmap: { enabled: jmap.enabled, allowedOrigins },
       ...(typeof item.brandingKey === 'string' && item.brandingKey.trim()
