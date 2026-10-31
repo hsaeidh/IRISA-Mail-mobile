@@ -11,11 +11,12 @@
       ],
       "oidc": {
         "enabled": true,
-        "issuer": "https://identity.example.invalid",
+        "issuer": "https://identity.example.invalid/oauth2/token",
         "organizationId": "",
         "organizationHandle": "REPLACE_WITH_WSO2_ORG_HANDLE",
         "clientId": "",
-        "redirectUri": "irisamail://oauth/callback",
+        "redirectUri": "ir.irisa.mail:/oauth/callback",
+        "legacyOrganizationSso": false,
         "scopes": [
           "openid",
           "profile",
