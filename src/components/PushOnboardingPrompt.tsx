@@ -16,7 +16,7 @@ import {
   dismissPushPrompt,
   getEffectiveRelayBaseUrl,
   isPushEnabledForAccount,
-  isPushSupported,
+  isPushOnboardingSupported,
   PushSetupError,
   setStoredRelayBaseUrl,
   setupPushNotifications,
@@ -29,7 +29,7 @@ const PROMPT_DELAY_MS = 1500;
 
 /**
  * Once-per-account invitation to turn on background notifications. Shown
- * only where push can actually work (Android with Play services), when the
+ * only where this build has a configured relay and native push transport, when the
  * user has not disabled mail notifications, and until either "Enable" or
  * "Not now" has been tapped for the active account.
  *
@@ -66,7 +66,7 @@ export function PushOnboardingPrompt(): React.ReactElement | null {
     setVisible(false);
     setError(null);
     if (!isAuthenticated || !client || !activeAccountId || !emailNotificationsEnabled) return;
-    if (!isPushSupported()) return;
+    if (!isPushOnboardingSupported()) return;
 
     let cancelled = false;
     const timer = setTimeout(() => {
