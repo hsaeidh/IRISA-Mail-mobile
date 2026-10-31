@@ -1,0 +1,25 @@
+{
+  "productName": "IRISA Mail",
+  "displayName": "IRISA Mail",
+  "slug": "irisa-mail",
+  "android": {
+    "applicationId": "ir.irisa.mail"
+  },
+  "ios": {
+    "bundleIdentifier": "ir.irisa.mail"
+  },
+  "urlSchemes": [
+    "irisamail"
+  ],
+  "sourceCodeUrl": "https://github.com/hsaeidh/IRISA-Mail-mobile",
+  "defaultLocale": "fa",
+  "supportedLocales": [
+    "fa",
+    "en"
+  ],
+  "assets": {
+    "appIcon": "branding/irisa/icon.png",
+    "adaptiveIcon": "branding/irisa/adaptive-icon.png",
+    "splash": "branding/irisa/splash.png"
+  }
+}
