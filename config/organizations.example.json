@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": 1,
+  "description": "Template only. Replace example.invalid entries in deployment configuration; do not put secrets here.",
+  "organizations": [
+    {
+      "key": "irisa",
+      "displayName": "IRISA",
+      "emailDomains": [
+        "example.invalid"
+      ],
+      "oidc": {
+        "enabled": true,
+        "issuer": "https://identity.example.invalid",
+        "organizationId": "",
+        "organizationHandle": "",
+        "clientId": "",
+        "redirectUri": "irisa-mail://oauth/callback",
+        "scopes": [
+          "openid",
+          "profile",
+          "email",
+          "offline_access"
+        ]
+      },
+      "jmap": {
+        "enabled": true,
+        "allowedOrigins": [
+          "https://mail.example.invalid"
+        ]
+      },
+      "brandingKey": "irisa"
+    }
+  ],
+  "fallback": {
+    "allowUnknownDomains": false,
+    "allowManualServerEntry": false
+  }
+}
