@@ -27,6 +27,8 @@ export interface OrganizationOidcConfig {
 export interface OrganizationJmapConfig {
   enabled: boolean;
   allowedOrigins: string[];
+  /** Optional HTTPS origins used only for JMAP blob/event resources, never the API endpoint. */
+  resourceOrigins: string[];
 }
 
 export interface OrganizationProfile {
@@ -167,6 +169,16 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     if (jmap.enabled && allowedOrigins.length === 0) {
       throw new Error(`Organization ${key} must allow at least one JMAP origin`);
     }
+    const resourceOrigins = (Array.isArray(jmap.resourceOrigins) ? jmap.resourceOrigins : []).map((value) => {
+      const origin = normalizedHttpsUrl(value);
+      if (!origin) throw new Error(`Organization ${key} has an invalid JMAP resource origin`);
+      const parsed = new URL(origin);
+      if (parsed.pathname !== '/' || parsed.search || parsed.hash) {
+        throw new Error(`Organization ${key} JMAP resource entries must be HTTPS origins, not paths`);
+      }
+      return parsed.origin;
+    });
+    const uniqueResourceOrigins = [...new Set(resourceOrigins)];
     if (oidc.enabled && (!jmap.enabled || allowedOrigins.length === 0)) {
       throw new Error(`Organization ${key} needs an enabled JMAP origin to use external OIDC for mail sign-in`);
     }
@@ -189,7 +201,7 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
         ...(scopes?.length ? { scopes } : {}),
         ...(oidc.legacyOrganizationSso === true ? { legacyOrganizationSso: true } : {}),
       },
-      jmap: { enabled: jmap.enabled, allowedOrigins },
+      jmap: { enabled: jmap.enabled, allowedOrigins, resourceOrigins: uniqueResourceOrigins },
       ...(typeof item.brandingKey === 'string' && item.brandingKey.trim()
         ? { brandingKey: item.brandingKey.trim() }
         : {}),
