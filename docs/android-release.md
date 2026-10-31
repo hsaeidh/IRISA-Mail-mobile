@@ -109,7 +109,7 @@ Build the Play AAB:
 gradlew.bat bundlePlayRelease
 ~~~
 
-Debug builds and npx expo run:android do not need the release keystore.
+Debug builds and npx expo run:android --variant githubDebug does not need the release keystore.
 A release build without the signing properties fails before packaging.
 
 ## 4. Organization and push configuration
