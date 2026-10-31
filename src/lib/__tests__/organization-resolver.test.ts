@@ -21,7 +21,7 @@ const config = validateOrganizationConfig({
         logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
         scopes: ['openid', 'profile', 'email'],
       },
-      jmap: { enabled: true, allowedOrigins: ['https://email.msc.test'] },
+      jmap: { enabled: true, allowedOrigins: ['https://email.msc.test'], resourceOrigins: ['https://cdn.msc.test'] },
     },
     {
       key: 'irisa',
@@ -45,6 +45,7 @@ describe('organization resolver', () => {
     if (result.ok) {
       expect(result.organization.key).toBe('msc');
       expect(result.organization.oidc.organizationHandle).toBe('MSC');
+      expect(result.organization.jmap.resourceOrigins).toEqual(['https://cdn.msc.test']);
       expect(result.organization.oidc.logoutRedirectUri).toBe('ir.irisa.mail:/oauth/logout');
     }
   });
@@ -120,6 +121,23 @@ describe('organization resolver', () => {
         jmap: { enabled: false, allowedOrigins: [] },
       }],
     })).toThrow(/organizationId or organizationHandle/);
+  });
+
+  it('rejects resource allowlist entries that are not HTTPS origins', () => {
+    expect(() => validateOrganizationConfig({
+      schemaVersion: 1,
+      organizations: [{
+        key: 'bad-resource',
+        displayName: 'Bad resource',
+        emailDomains: ['bad-resource.test'],
+        oidc: { enabled: false, issuer: '', clientId: '', redirectUri: '' },
+        jmap: {
+          enabled: true,
+          allowedOrigins: ['https://mail.bad-resource.test'],
+          resourceOrigins: ['https://cdn.bad-resource.test/private'],
+        },
+      }],
+    })).toThrow(/resource entries must be HTTPS origins/);
   });
 
   it('allows only exact configured HTTPS JMAP origins', () => {
