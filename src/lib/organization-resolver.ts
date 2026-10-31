@@ -212,7 +212,8 @@ export function resolveOrganization(
 export function isAllowedJmapOrigin(url: string, organization: OrganizationProfile): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' && organization.jmap.enabled &&
+    return parsed.protocol === 'https:' && !parsed.username && !parsed.password &&
+      parsed.pathname === '/' && !parsed.search && !parsed.hash && organization.jmap.enabled &&
       organization.jmap.allowedOrigins.includes(parsed.origin);
   } catch {
     return false;
