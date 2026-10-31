@@ -348,7 +348,7 @@ export function NotificationSettings() {
         title={t('settings.notifications.push.title', 'Background Notifications')}
         description={t(
           'settings.notifications.push.description_mobile',
-          'Receive system notifications for new mail when the app is closed. Delivered via the Bulwark push relay; the relay never sees mail content.',
+          'Receive system notifications for new mail when the app is closed. Delivered via the IRISA relay configured by your organization; the relay never sees mail content.',
         )}
       >
         <SettingItem label={t('settings.notifications.push.enable', 'Enable')} description={statusDescription}>
@@ -408,7 +408,7 @@ export function NotificationSettings() {
               <Text style={styles.errorText}>
                 {t(
                   'settings.notifications.push.up_no_distributor',
-                  'No UnifiedPush distributor app is installed on this device. Install one (for example ntfy) and try again.',
+                  'UnifiedPush requires a separate compatible distributor app (for example ntfy). This option is optional.',
                 )}
               </Text>
             )}
