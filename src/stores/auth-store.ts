@@ -813,6 +813,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         clientId: oidc.clientId,
         redirectUri: oidc.redirectUri,
         logoutRedirectUri: oidc.logoutRedirectUri,
+        externalProvider: true,
         scopes: oidc.scopes?.join(' ') || 'openid profile email offline_access',
         authorizationParams,
         requireIdToken: true,
