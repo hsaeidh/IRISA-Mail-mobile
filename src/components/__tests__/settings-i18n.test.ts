@@ -8,7 +8,7 @@ import { findUntranslatedLiterals } from './untranslated-literals';
 // Pane file (relative to src/components/) → texts that stay as they are on
 // purpose: product names, units, format patterns and sample data.
 const TRANSLATED_PANES: Record<string, string[]> = {
-  'settings/AboutSettings.tsx': [],
+  'settings/AboutSettings.tsx': ['IRISA Mail', 'IR'],
   'settings/AccountSecuritySettings.tsx': ['AES-128', 'AES-256'],
   'settings/AccountSettings.tsx': [],
   'settings/AppearanceSettings.tsx': [],
