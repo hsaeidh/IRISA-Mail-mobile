@@ -17,7 +17,8 @@ const config = validateOrganizationConfig({
         issuer: 'https://identity.example.org/t/msc',
         organizationHandle: 'MSC',
         clientId: 'mobile-public-client',
-        redirectUri: 'irisamail://oauth/callback',
+        redirectUri: 'ir.irisa.mail:/oauth/callback',
+        logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
         scopes: ['openid', 'profile', 'email'],
       },
       jmap: { enabled: true, allowedOrigins: ['https://email.msc.example'] },
@@ -44,6 +45,7 @@ describe('organization resolver', () => {
     if (result.ok) {
       expect(result.organization.key).toBe('msc');
       expect(result.organization.oidc.organizationHandle).toBe('MSC');
+      expect(result.organization.oidc.logoutRedirectUri).toBe('ir.irisa.mail:/oauth/logout');
     }
   });
 
