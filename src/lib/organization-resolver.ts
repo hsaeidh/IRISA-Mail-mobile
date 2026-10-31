@@ -169,6 +169,9 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     if (jmap.enabled && allowedOrigins.length === 0) {
       throw new Error(`Organization ${key} must allow at least one JMAP origin`);
     }
+    if (jmap.resourceOrigins !== undefined && !Array.isArray(jmap.resourceOrigins)) {
+      throw new Error(`Organization ${key} jmap.resourceOrigins must be an array`);
+    }
     const resourceOrigins = (Array.isArray(jmap.resourceOrigins) ? jmap.resourceOrigins : []).map((value) => {
       const origin = normalizedHttpsUrl(value);
       if (!origin) throw new Error(`Organization ${key} has an invalid JMAP resource origin`);
