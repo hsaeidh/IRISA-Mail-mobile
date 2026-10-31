@@ -18,7 +18,7 @@ function validConfig() {
     organizations: [{
       key: 'irisa',
       displayName: 'IRISA',
-      emailDomains: ['irisa.example'],
+      emailDomains: ['irisa.test'],
       oidc: {
         enabled: true,
         issuer: 'https://identity.example.org/oauth2/token',
@@ -27,7 +27,7 @@ function validConfig() {
         redirectUri: 'ir.irisa.mail:/oauth/callback',
         logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
       },
-      jmap: { enabled: true, allowedOrigins: ['https://mail.irisa.example'] },
+      jmap: { enabled: true, allowedOrigins: ['https://mail.irisa.test'] },
     }],
     fallback: { allowManualServerEntry: false },
   };
