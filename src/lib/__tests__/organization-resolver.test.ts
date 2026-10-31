@@ -11,36 +11,36 @@ const config = validateOrganizationConfig({
     {
       key: 'msc',
       displayName: 'MSC',
-      emailDomains: ['msc.example'],
+      emailDomains: ['msc.test'],
       oidc: {
         enabled: true,
-        issuer: 'https://identity.example.org/t/msc',
+        issuer: 'https://identity.test.org/t/msc',
         organizationHandle: 'MSC',
         clientId: 'mobile-public-client',
         redirectUri: 'ir.irisa.mail:/oauth/callback',
         logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
         scopes: ['openid', 'profile', 'email'],
       },
-      jmap: { enabled: true, allowedOrigins: ['https://email.msc.example'] },
+      jmap: { enabled: true, allowedOrigins: ['https://email.msc.test'] },
     },
     {
       key: 'irisa',
       displayName: 'IRISA',
-      emailDomains: ['irisa.example'],
+      emailDomains: ['irisa.test'],
       oidc: {
         enabled: false,
         issuer: '',
         clientId: '',
         redirectUri: '',
       },
-      jmap: { enabled: true, allowedOrigins: ['https://email.irisa.example'] },
+      jmap: { enabled: true, allowedOrigins: ['https://email.irisa.test'] },
     },
   ],
 });
 
 describe('organization resolver', () => {
   it('resolves a configured domain exactly', () => {
-    const result = resolveOrganization('person@msc.example', config);
+    const result = resolveOrganization('person@msc.test', config);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.organization.key).toBe('msc');
@@ -52,28 +52,28 @@ describe('organization resolver', () => {
   it('normalizes case and internationalized email domains', () => {
     const result = resolveOrganization('User@MSC.EXAMPLE', config);
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.matchedDomain).toBe('msc.example');
+    if (result.ok) expect(result.matchedDomain).toBe('msc.test');
   });
 
   it('does not match a subdomain or a lookalike suffix', () => {
-    expect(resolveOrganization('user@sub.msc.example', config)).toEqual({
+    expect(resolveOrganization('user@sub.msc.test', config)).toEqual({
       ok: false,
       reason: 'unknown-domain',
     });
-    expect(resolveOrganization('user@msc.example.attacker.test', config).ok).toBe(false);
+    expect(resolveOrganization('user@msc.test.attacker.test', config).ok).toBe(false);
   });
 
   it('fails closed for invalid email and unknown domains', () => {
     expect(resolveOrganization('not-an-email', config)).toEqual({ ok: false, reason: 'invalid-email' });
-    expect(resolveOrganization('user@unknown.example', config)).toEqual({ ok: false, reason: 'unknown-domain' });
+    expect(resolveOrganization('user@unknown.test', config)).toEqual({ ok: false, reason: 'unknown-domain' });
   });
 
   it('rejects duplicate domains and insecure OIDC issuers', () => {
     expect(() => validateOrganizationConfig({
       schemaVersion: 1,
       organizations: [
-        { key: 'a', displayName: 'A', emailDomains: ['same.example'], oidc: { enabled: false, issuer: '', clientId: '', redirectUri: '' }, jmap: { enabled: false, allowedOrigins: [] } },
-        { key: 'b', displayName: 'B', emailDomains: ['same.example'], oidc: { enabled: false, issuer: '', clientId: '', redirectUri: '' }, jmap: { enabled: false, allowedOrigins: [] } },
+        { key: 'a', displayName: 'A', emailDomains: ['same.test'], oidc: { enabled: false, issuer: '', clientId: '', redirectUri: '' }, jmap: { enabled: false, allowedOrigins: [] } },
+        { key: 'b', displayName: 'B', emailDomains: ['same.test'], oidc: { enabled: false, issuer: '', clientId: '', redirectUri: '' }, jmap: { enabled: false, allowedOrigins: [] } },
       ],
     })).toThrow(/assigned more than once/);
 
@@ -82,8 +82,8 @@ describe('organization resolver', () => {
       organizations: [{
         key: 'bad',
         displayName: 'Bad',
-        emailDomains: ['bad.example'],
-        oidc: { enabled: true, issuer: 'http://identity.example', organizationHandle: 'bad', clientId: 'x', redirectUri: 'ir.irisa.mail:/oauth/callback' },
+        emailDomains: ['bad.test'],
+        oidc: { enabled: true, issuer: 'http://identity.test', organizationHandle: 'bad', clientId: 'x', redirectUri: 'ir.irisa.mail:/oauth/callback' },
         jmap: { enabled: false, allowedOrigins: [] },
       }],
     })).toThrow(/incomplete OIDC settings/);
@@ -95,10 +95,10 @@ describe('organization resolver', () => {
       organizations: [{
         key: 'secret',
         displayName: 'Secret',
-        emailDomains: ['secret.example'],
+        emailDomains: ['secret.test'],
         oidc: {
           enabled: true,
-          issuer: 'https://identity.example',
+          issuer: 'https://identity.test',
           organizationHandle: 'secret',
           clientId: 'public-client',
           clientSecret: 'must-never-be-shipped',
@@ -115,8 +115,8 @@ describe('organization resolver', () => {
       organizations: [{
         key: 'bad',
         displayName: 'Bad',
-        emailDomains: ['bad.example'],
-        oidc: { enabled: true, issuer: 'https://identity.example', clientId: 'x', redirectUri: 'ir.irisa.mail:/oauth/callback' },
+        emailDomains: ['bad.test'],
+        oidc: { enabled: true, issuer: 'https://identity.test', clientId: 'x', redirectUri: 'ir.irisa.mail:/oauth/callback' },
         jmap: { enabled: false, allowedOrigins: [] },
       }],
     })).toThrow(/organizationId or organizationHandle/);
@@ -124,10 +124,10 @@ describe('organization resolver', () => {
 
   it('allows only exact configured HTTPS JMAP origins', () => {
     const msc = config.organizations[0];
-    expect(isAllowedJmapOrigin('https://email.msc.example/', msc)).toBe(true);
-    expect(isAllowedJmapOrigin('https://email.msc.example/jmap/session', msc)).toBe(false);
-    expect(isAllowedJmapOrigin('https://email.msc.example.evil.test', msc)).toBe(false);
-    expect(isAllowedJmapOrigin('http://email.msc.example', msc)).toBe(false);
-    expect(isAllowedJmapOrigin('https://other.msc.example', msc)).toBe(false);
+    expect(isAllowedJmapOrigin('https://email.msc.test/', msc)).toBe(true);
+    expect(isAllowedJmapOrigin('https://email.msc.test/jmap/session', msc)).toBe(false);
+    expect(isAllowedJmapOrigin('https://email.msc.test.evil.test', msc)).toBe(false);
+    expect(isAllowedJmapOrigin('http://email.msc.test', msc)).toBe(false);
+    expect(isAllowedJmapOrigin('https://other.msc.test', msc)).toBe(false);
   });
 });
