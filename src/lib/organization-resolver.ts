@@ -7,6 +7,9 @@
  */
 import { toAsciiDomain } from './idn';
 
+export const IRISA_OIDC_REDIRECT_URI = 'ir.irisa.mail:/oauth/callback';
+export const IRISA_OIDC_LOGOUT_REDIRECT_URI = 'ir.irisa.mail:/oauth/logout';
+
 const EMAIL_WITH_DOMAIN_RE = /^[^\s@]+@([^\s@]+\.[^\s@]+)$/;
 
 export interface OrganizationOidcConfig {
@@ -115,11 +118,11 @@ export function validateOrganizationConfig(input: unknown): OrganizationConfig {
     const clientId = typeof oidc.clientId === 'string' ? oidc.clientId.trim() : '';
     const redirectUri = typeof oidc.redirectUri === 'string' ? oidc.redirectUri.trim() : '';
     const logoutRedirectUri = typeof oidc.logoutRedirectUri === 'string' ? oidc.logoutRedirectUri.trim() : '';
-    if (oidc.enabled && (!issuer || !clientId || !redirectUri || !/^[a-z][a-z0-9+.-]*:\/\//i.test(redirectUri))) {
-      throw new Error(`Organization ${key} has incomplete or insecure OIDC settings`);
+    if (oidc.enabled && (!issuer || !clientId || redirectUri !== IRISA_OIDC_REDIRECT_URI)) {
+      throw new Error(`Organization ${key} has incomplete OIDC settings or an unregistered IRISA callback URI`);
     }
-    if (oidc.enabled && logoutRedirectUri && !/^[a-z][a-z0-9+.-]*:\/\//i.test(logoutRedirectUri) && !/^[a-z][a-z0-9+.-]*:\/[^/]/i.test(logoutRedirectUri)) {
-      throw new Error(`Organization ${key} has an invalid OIDC logout redirect URI`);
+    if (oidc.enabled && logoutRedirectUri && logoutRedirectUri !== IRISA_OIDC_LOGOUT_REDIRECT_URI) {
+      throw new Error(`Organization ${key} has an unregistered IRISA OIDC logout redirect URI`);
     }
     const organizationId = typeof oidc.organizationId === 'string' ? oidc.organizationId.trim() : '';
     const organizationHandle = typeof oidc.organizationHandle === 'string' ? oidc.organizationHandle.trim() : '';
