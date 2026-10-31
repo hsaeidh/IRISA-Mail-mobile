@@ -62,7 +62,7 @@ function normalizedIssuerUrl(value: unknown): string | null {
   try {
     const url = new URL(raw);
     if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash ||
-      /REPLACE_WITH/i.test(raw) || /\\.(?:example|invalid)$/i.test(url.hostname)) return null;
+      /REPLACE_WITH/i.test(raw) || /\.(?:example|invalid)$/i.test(url.hostname)) return null;
     return raw;
   } catch {
     return null;
