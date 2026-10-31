@@ -43,6 +43,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Deployment-specific organization routing (keep the example template tracked)
+/config/organizations.json
+
 # typescript
 *.tsbuildinfo
 
