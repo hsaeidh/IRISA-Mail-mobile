@@ -360,7 +360,7 @@ function registrationEndpoint(metadata: OAuthMetadata): string | undefined {
 export async function loginWithPkce(
   serverUrl: string,
   metadata: OAuthMetadata,
-  opts?: { clientId?: string; scopes?: string; redirectUri?: string; logoutRedirectUri?: string; addAccount?: boolean; authorizationParams?: Record<string, string>; requireIdToken?: boolean },
+  opts?: { clientId?: string; scopes?: string; redirectUri?: string; logoutRedirectUri?: string; externalProvider?: boolean; addAccount?: boolean; authorizationParams?: Record<string, string>; requireIdToken?: boolean },
 ): Promise<OAuthTokens> {
   const client = opts?.clientId
     ? { clientId: opts.clientId, redirectUri: opts.redirectUri ?? HANDOFF_REDIRECT_URI }
@@ -452,6 +452,7 @@ export async function loginWithPkce(
     clientId,
     source: 'native',
     ...(metadata.issuer ? { issuer: metadata.issuer } : {}),
+    ...(opts?.externalProvider ? { externalProvider: true } : {}),
     ...(metadata.revocation_endpoint ? { revocationEndpoint: metadata.revocation_endpoint } : {}),
     ...(metadata.end_session_endpoint ? { endSessionEndpoint: metadata.end_session_endpoint } : {}),
     ...(opts?.logoutRedirectUri ? { logoutRedirectUri: opts.logoutRedirectUri } : {}),
@@ -508,8 +509,8 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
   if (tokens.source !== 'native') return Promise.resolve();
   const run = async () => {
     try {
-      const externalProvider = !!tokens.tokenEndpoint && !!serverUrl &&
-        new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin;
+      const externalProvider = tokens.externalProvider ?? (!!tokens.tokenEndpoint && !!serverUrl &&
+        new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin);
       if (externalProvider && !tokens.logoutRedirectUri) return;
       const metadata = tokens.endSessionEndpoint
         ? { end_session_endpoint: tokens.endSessionEndpoint }
@@ -532,8 +533,8 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
 export async function revokeRefreshToken(serverUrl: string, tokens: OAuthTokens): Promise<void> {
   if (!tokens.refreshToken) return;
   try {
-    const externalProvider = !!tokens.tokenEndpoint && !!serverUrl &&
-      new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin;
+    const externalProvider = tokens.externalProvider ?? (!!tokens.tokenEndpoint && !!serverUrl &&
+      new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin);
     const metadata = tokens.revocationEndpoint || externalProvider ? null : await discoverOAuthMetadata(serverUrl);
     const endpoint = tokens.revocationEndpoint ?? metadata?.revocation_endpoint;
     if (!endpoint || !/^https?:\/\//i.test(endpoint)) return;
