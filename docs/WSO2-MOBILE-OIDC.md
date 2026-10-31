@@ -41,6 +41,8 @@ Configure:
 - Redirect URI, exactly:
 
   `ir.irisa.mail:/oauth/callback`
+- Post-logout redirect URI (when RP-initiated logout is enabled):
+  `ir.irisa.mail:/oauth/logout`
 
 - Scopes: `openid`, `profile`, `email`, and `offline_access` if refresh
   tokens are required. Add any Stalwart-specific scopes only after confirming
