@@ -83,7 +83,7 @@ describe('organization resolver', () => {
         key: 'bad',
         displayName: 'Bad',
         emailDomains: ['bad.example'],
-        oidc: { enabled: true, issuer: 'http://identity.example', organizationHandle: 'bad', clientId: 'x', redirectUri: 'irisamail://oauth/callback' },
+        oidc: { enabled: true, issuer: 'http://identity.example', organizationHandle: 'bad', clientId: 'x', redirectUri: 'ir.irisa.mail:/oauth/callback' },
         jmap: { enabled: false, allowedOrigins: [] },
       }],
     })).toThrow(/incomplete or insecure OIDC/);
@@ -102,7 +102,7 @@ describe('organization resolver', () => {
           organizationHandle: 'secret',
           clientId: 'public-client',
           clientSecret: 'must-never-be-shipped',
-          redirectUri: 'irisamail://oauth/callback',
+          redirectUri: 'ir.irisa.mail:/oauth/callback',
         },
         jmap: { enabled: false, allowedOrigins: [] },
       }],
@@ -116,7 +116,7 @@ describe('organization resolver', () => {
         key: 'bad',
         displayName: 'Bad',
         emailDomains: ['bad.example'],
-        oidc: { enabled: true, issuer: 'https://identity.example', clientId: 'x', redirectUri: 'irisamail://oauth/callback' },
+        oidc: { enabled: true, issuer: 'https://identity.example', clientId: 'x', redirectUri: 'ir.irisa.mail:/oauth/callback' },
         jmap: { enabled: false, allowedOrigins: [] },
       }],
     })).toThrow(/organizationId or organizationHandle/);
