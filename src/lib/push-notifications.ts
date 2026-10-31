@@ -1,5 +1,6 @@
 import { NativeEventEmitter, NativeModules, PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import {
   createPushSubscription,
   destroyPushSubscription,
@@ -199,10 +200,10 @@ export async function migrateLegacyPushKeys(): Promise<void> {
   ]);
 }
 
-// Hosted relay so users don't need to run their own Firebase project. The
-// relay only ever sees FCM tokens + JMAP state-id hashes - no mail content.
-// Power users can override this from the settings screen.
-export const DEFAULT_RELAY_BASE_URL = 'https://notifications.relay.bulwarkmail.org';
+// IRISA does not use the upstream Bulwark relay. Set this to the organization's
+// own relay in a deployment build only after its endpoint is provisioned.
+// Empty means push remains disabled until an administrator supplies an endpoint.
+export const DEFAULT_RELAY_BASE_URL = '';
 
 /**
  * A relay must be reachable over TLS: the registration carries the FCM token
@@ -635,7 +636,19 @@ type BulwarkFcmNative = {
 
 function getNative(): BulwarkFcmNative | null {
   if (Platform.OS !== 'android') return null;
+  const extra = Constants.expoConfig?.extra as { fcmEnabled?: unknown } | undefined;
+  if (extra?.fcmEnabled === false) return null;
   return (NativeModules as Record<string, unknown>).BulwarkFcm as BulwarkFcmNative | undefined ?? null;
+}
+
+/** Whether this build has its own Firebase project configuration. */
+export function isFcmSupported(): boolean {
+  return getNative() !== null;
+}
+
+/** The first-run prompt is shown only when a configured relay and native transport exist. */
+export function isPushOnboardingSupported(): boolean {
+  return !!DEFAULT_RELAY_BASE_URL && (Platform.OS === 'ios' || getNative() !== null);
 }
 
 /** True on platforms that have a push transport wired up: FCM or UnifiedPush on Android, APNs on iOS. */
@@ -651,6 +664,9 @@ export async function getStoredPushTransport(): Promise<PushTransport | null> {
 }
 
 export async function setStoredPushTransport(transport: PushTransport | null): Promise<void> {
+  if (transport === 'fcm' && !getNative()) {
+    throw new Error('FCM is not configured for this IRISA build');
+  }
   if (!transport) {
     await AsyncStorage.removeItem(PUSH_TRANSPORT_KEY);
   } else {
@@ -661,11 +677,13 @@ export async function setStoredPushTransport(transport: PushTransport | null): P
 export async function getEffectivePushTransport(): Promise<PushTransport> {
   // iOS has one way in: APNs, through the relay.
   if (Platform.OS === 'ios') return 'apns';
-  return (await getStoredPushTransport()) ?? 'fcm';
+  const stored = await getStoredPushTransport();
+  if (stored === 'fcm' && !getNative()) return 'unifiedpush';
+  return stored ?? (getNative() ? 'fcm' : 'unifiedpush');
 }
 
 export interface PushSetupParams {
-  // Optional - falls back to the hosted relay if omitted.
+  // Optional - falls back to the configured IRISA relay if omitted.
   relayBaseUrl?: string;
   accountLabel?: string;
   // Destroy the recorded server-side subscription and create a brand-new one
