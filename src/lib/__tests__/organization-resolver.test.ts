@@ -50,7 +50,7 @@ describe('organization resolver', () => {
   });
 
   it('normalizes case and internationalized email domains', () => {
-    const result = resolveOrganization('User@MSC.EXAMPLE', config);
+    const result = resolveOrganization('User@MSC.TEST', config);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.matchedDomain).toBe('msc.test');
   });
