@@ -812,6 +812,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const tokens = await loginWithPkce(base, metadata, {
         clientId: oidc.clientId,
         redirectUri: oidc.redirectUri,
+        logoutRedirectUri: oidc.logoutRedirectUri,
         scopes: oidc.scopes?.join(' ') || 'openid profile email offline_access',
         authorizationParams,
         requireIdToken: true,
