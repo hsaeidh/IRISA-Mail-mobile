@@ -32,10 +32,11 @@ describe('about links', () => {
     expect(sourceCodeUrl('javascript:alert(1)')).toBe(NATIVE_REPO_URL);
   });
 
-  it('sends iPhone users to TestFlight, not to the GitHub releases', () => {
-    expect(updateSourceUrl('ios', 'https://github.com/bulwarkmail/native/releases/tag/0.1.77')).toBe(IOS_TESTFLIGHT_URL);
-    expect(updateSourceUrl('android', 'https://github.com/bulwarkmail/native/releases/tag/0.1.77'))
-      .toBe('https://github.com/bulwarkmail/native/releases/tag/0.1.77');
+  it('uses IRISA releases until an iOS TestFlight listing is configured', () => {
+    expect(IOS_TESTFLIGHT_URL).toBeNull();
+    expect(updateSourceUrl('ios', null)).toBe(`${NATIVE_REPO_URL}/releases`);
+    expect(updateSourceUrl('android', 'https://github.com/hsaeidh/IRISA-Mail-mobile/releases/tag/1.0.0'))
+      .toBe('https://github.com/hsaeidh/IRISA-Mail-mobile/releases/tag/1.0.0');
     expect(updateSourceUrl('android', null)).toBe(`${NATIVE_REPO_URL}/releases`);
   });
 });
