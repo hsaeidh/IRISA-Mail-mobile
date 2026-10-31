@@ -1,7 +1,9 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-apply plugin: "com.google.gms.google-services"
+if (file("google-services.json").exists()) {
+    apply plugin: "com.google.gms.google-services"
+}
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
@@ -148,7 +150,7 @@ android {
 
     namespace 'com.anonymous.bulwarkmobile'
     defaultConfig {
-        applicationId 'com.anonymous.bulwarkmobile'
+        applicationId 'ir.irisa.mail'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode.toInteger()
@@ -172,12 +174,12 @@ android {
     productFlavors {
         github {
             dimension "distribution"
-            applicationId 'com.anonymous.bulwarkmobile'
+            applicationId 'ir.irisa.mail.github'
             buildConfigField "String", "DISTRIBUTION", '"github"'
         }
         play {
             dimension "distribution"
-            applicationId 'org.bulwarkmail.mobile'
+            applicationId 'ir.irisa.mail'
             buildConfigField "String", "DISTRIBUTION", '"play"'
         }
     }
