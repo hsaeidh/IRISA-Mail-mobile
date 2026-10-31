@@ -148,7 +148,7 @@ describe('the WidgetKit side', () => {
   it('builds a WidgetKit extension in the shared keychain group', () => {
     const { internals } = plugin;
     expect(internals.infoPlist({ version: '1.0.0', buildNumber: '7' })).toContain('<string>com.apple.widgetkit-extension</string>');
-    expect(internals.entitlementsPlist()).toContain('$(AppIdentifierPrefix)org.bulwarkmail.shared');
+    expect(internals.entitlementsPlist()).toContain('$(AppIdentifierPrefix)ir.irisa.mail.shared');
     expect(internals.SOURCE_FILES).toEqual(['BulwarkWidget.swift', 'SharedKeychain.swift']);
     expect(internals.APP_FILES).toEqual(['BulwarkWidgetKit.swift', 'BulwarkWidgetKit.m']);
     expect(read('app.config.js')).toContain("'./plugins/ios-widget'");
