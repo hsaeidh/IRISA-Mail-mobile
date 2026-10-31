@@ -339,7 +339,7 @@ function registrationEndpoint(metadata: OAuthMetadata): string | undefined {
 export async function loginWithPkce(
   serverUrl: string,
   metadata: OAuthMetadata,
-  opts?: { clientId?: string; scopes?: string; redirectUri?: string; addAccount?: boolean; authorizationParams?: Record<string, string>; requireIdToken?: boolean },
+  opts?: { clientId?: string; scopes?: string; redirectUri?: string; logoutRedirectUri?: string; addAccount?: boolean; authorizationParams?: Record<string, string>; requireIdToken?: boolean },
 ): Promise<OAuthTokens> {
   const client = opts?.clientId
     ? { clientId: opts.clientId, redirectUri: opts.redirectUri ?? HANDOFF_REDIRECT_URI }
@@ -430,6 +430,10 @@ export async function loginWithPkce(
     tokenEndpoint: metadata.token_endpoint,
     clientId,
     source: 'native',
+    ...(metadata.issuer ? { issuer: metadata.issuer } : {}),
+    ...(metadata.revocation_endpoint ? { revocationEndpoint: metadata.revocation_endpoint } : {}),
+    ...(metadata.end_session_endpoint ? { endSessionEndpoint: metadata.end_session_endpoint } : {}),
+    ...(opts?.logoutRedirectUri ? { logoutRedirectUri: opts.logoutRedirectUri } : {}),
     // Kept for ending the provider's session at sign-out (endProviderSession).
     ...(typeof data.id_token === 'string' && data.id_token ? { idToken: data.id_token } : {}),
   };
@@ -450,7 +454,7 @@ export async function loginWithPkce(
 export function buildEndSessionUrl(
   serverUrl: string,
   metadata: Pick<OAuthMetadata, 'end_session_endpoint'>,
-  tokens: Pick<OAuthTokens, 'clientId' | 'idToken'>,
+  tokens: Pick<OAuthTokens, 'clientId' | 'idToken' | 'logoutRedirectUri'>,
 ): { url: string; returnUrl: string } | null {
   const endpoint = metadata.end_session_endpoint;
   if (typeof endpoint !== 'string' || !/^https?:\/\//i.test(endpoint)) return null;
@@ -458,11 +462,12 @@ export function buildEndSessionUrl(
   const registered = tokens.clientId !== DEFAULT_CLIENT_ID && tokens.clientId !== MOBILE_CLIENT_ID;
   const params = new URLSearchParams({ client_id: tokens.clientId });
   if (tokens.idToken) params.set('id_token_hint', tokens.idToken);
-  if (registered) params.set('post_logout_redirect_uri', REGISTERED_LOGOUT_REDIRECT_URI);
+  const logoutRedirectUri = tokens.logoutRedirectUri ?? REGISTERED_LOGOUT_REDIRECT_URI;
+  if (registered) params.set('post_logout_redirect_uri', logoutRedirectUri);
   return {
     url: `${endpoint}${endpoint.includes('?') ? '&' : '?'}${params.toString()}`,
     // The browser session closes when the provider sends it back to the app.
-    returnUrl: registered ? REGISTERED_LOGOUT_REDIRECT_URI : REGISTERED_REDIRECT_URI,
+    returnUrl: registered ? logoutRedirectUri : REGISTERED_REDIRECT_URI,
   };
 }
 
@@ -482,7 +487,12 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
   if (tokens.source !== 'native') return Promise.resolve();
   const run = async () => {
     try {
-      const metadata = await discoverOAuthMetadata(serverUrl);
+      const externalProvider = !!tokens.tokenEndpoint && !!serverUrl &&
+        new URL(tokens.tokenEndpoint).origin !== new URL(serverUrl).origin;
+      if (externalProvider && !tokens.logoutRedirectUri) return;
+      const metadata = tokens.endSessionEndpoint
+        ? { end_session_endpoint: tokens.endSessionEndpoint }
+        : await discoverOAuthMetadata(serverUrl);
       const target = metadata ? buildEndSessionUrl(serverUrl, metadata, tokens) : null;
       if (!target) return;
       await WebBrowser.openAuthSessionAsync(target.url, target.returnUrl);
@@ -501,9 +511,11 @@ export function endProviderSession(serverUrl: string, tokens: OAuthTokens): Prom
 export async function revokeRefreshToken(serverUrl: string, tokens: OAuthTokens): Promise<void> {
   if (!tokens.refreshToken) return;
   try {
-    const metadata = await discoverOAuthMetadata(serverUrl);
-    const endpoint = metadata?.revocation_endpoint;
+    const metadata = tokens.revocationEndpoint ? null : await discoverOAuthMetadata(serverUrl);
+    const endpoint = tokens.revocationEndpoint ?? metadata?.revocation_endpoint;
     if (!endpoint || !/^https?:\/\//i.test(endpoint)) return;
+    if (tokens.revocationEndpoint && tokens.tokenEndpoint &&
+      new URL(endpoint).origin !== new URL(tokens.tokenEndpoint).origin) return;
     const body = new URLSearchParams({
       token: tokens.refreshToken,
       token_type_hint: 'refresh_token',
