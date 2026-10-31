@@ -2,10 +2,10 @@
 // app, and a prefilled GitHub issue. Kept free of React Native so it can be
 // unit-tested; the screen passes in the platform details.
 
-export const NATIVE_REPO_URL = 'https://github.com/bulwarkmail/native';
+export const NATIVE_REPO_URL = 'https://github.com/hsaeidh/IRISA-Mail-mobile';
 
 /** Public TestFlight link (README). There is no App Store listing yet. */
-export const IOS_TESTFLIGHT_URL = 'https://testflight.apple.com/join/rumcjNSp';
+export const IOS_TESTFLIGHT_URL: string | null = null;
 
 export interface DeviceInfo {
   os: string;
@@ -64,6 +64,6 @@ export function buildIssueUrl(app: { version: string; commit: string }, device: 
  * (Settings → Updates), iOS gets it from TestFlight.
  */
 export function updateSourceUrl(os: string, releaseUrl: string | null | undefined): string {
-  if (os === 'ios') return IOS_TESTFLIGHT_URL;
+  if (os === 'ios' && IOS_TESTFLIGHT_URL) return IOS_TESTFLIGHT_URL;
   return releaseUrl || `${NATIVE_REPO_URL}/releases`;
 }
