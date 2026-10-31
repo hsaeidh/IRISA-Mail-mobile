@@ -163,7 +163,7 @@ android {
      * Where the build is distributed. The two are separate apps on a phone:
      *
      * - github: the APK on GitHub Releases, sideloaded, updated by the in-app
-     *   updater. Keeps the original package name so existing installs update.
+     *   updater. Uses a distinct IRISA package id from the Play flavor.
      * - play: the Google Play bundle. Play forbids an app updating itself
      *   outside Play, so this flavor has no installer permission and the JS
      *   hides the updater (BuildConfig.DISTRIBUTION, lib/platform-capabilities).
