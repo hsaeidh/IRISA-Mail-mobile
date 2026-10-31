@@ -442,7 +442,7 @@ export function NotificationSettings() {
           label={t('settings.notifications.push.relay_label', 'Push relay')}
           description={t(
             'settings.notifications.push.relay_desc_mobile',
-            'The HTTPS endpoint of your organization's IRISA push relay. Ask your administrator for the address.',
+            "The HTTPS endpoint of your organization's IRISA push relay. Ask your administrator for the address.",
           )}
           noBorder
         >
