@@ -1,6 +1,6 @@
 // Config plugin: the iOS inbox widget (WidgetKit).
 //
-// - A widget extension target ("BulwarkWidget", org.bulwarkmail.mobile.Widget)
+// - A widget extension target ("BulwarkWidget", ir.irisa.mail.Widget)
 //   built from BulwarkWidget.swift, plus SharedKeychain.swift from
 //   plugins/ios-push: the widget reads what it shows from the keychain group
 //   the app shares with its extensions (src/widgets/ios.ts writes it). No app
@@ -21,7 +21,7 @@ const { addTargetFiles, hasTarget } = require('../ios-target-files');
 
 const TARGET = 'BulwarkWidget';
 const DEPLOYMENT_TARGET = '15.1';
-const SHARED_GROUP_SUFFIX = 'org.bulwarkmail.shared';
+const SHARED_GROUP_SUFFIX = 'ir.irisa.mail.shared';
 // The widget's own sources, and the ones it borrows from plugins/ios-push.
 const WIDGET_FILES = ['BulwarkWidget.swift'];
 const BORROWED_FILES = ['SharedKeychain.swift'];
@@ -36,7 +36,7 @@ function infoPlist({ version, buildNumber }) {
   <key>CFBundleDevelopmentRegion</key>
   <string>$(DEVELOPMENT_LANGUAGE)</string>
   <key>CFBundleDisplayName</key>
-  <string>Bulwark Mail</string>
+  <string>IRISA Mail</string>
   <key>CFBundleExecutable</key>
   <string>$(EXECUTABLE_NAME)</string>
   <key>CFBundleIdentifier</key>
