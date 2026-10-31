@@ -16,7 +16,7 @@ vi.mock('../client-cert', () => {
 });
 
 import { fetchWithoutForeignRedirect } from '../client-cert';
-import { buildEndSessionUrl, endProviderSession, loginWithPkce, type OAuthMetadata } from '../oauth-native';
+import { buildEndSessionUrl, endProviderSession, loginWithPkce, revokeRefreshToken, type OAuthMetadata } from '../oauth-native';
 import { refreshOAuthAccessToken, resetRefreshRotations, type OAuthTokens } from '../oauth';
 import { DEFAULT_CLIENT_ID, MOBILE_CLIENT_ID, REGISTERED_LOGOUT_REDIRECT_URI } from '../totp-login';
 
@@ -56,6 +56,15 @@ describe('buildEndSessionUrl', () => {
     expect(target!.returnUrl).toBe(REGISTERED_LOGOUT_REDIRECT_URI);
   });
 
+  it('uses the organization-specific logout callback when configured', () => {
+    const target = buildEndSessionUrl(SERVER, DISCOVERY, tokens({
+      logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
+    }));
+    const url = new URL(target!.url);
+    expect(url.searchParams.get('post_logout_redirect_uri')).toBe('ir.irisa.mail:/oauth/logout');
+    expect(target!.returnUrl).toBe('ir.irisa.mail:/oauth/logout');
+  });
+
   it('sends no return address for a client someone else registered', () => {
     for (const clientId of [DEFAULT_CLIENT_ID, MOBILE_CLIENT_ID]) {
       const url = new URL(buildEndSessionUrl(SERVER, DISCOVERY, tokens({ clientId }))!.url);
@@ -81,6 +90,31 @@ describe('endProviderSession', () => {
     const [url, returnUrl] = browser.mock.calls[0] as [string, string];
     expect(new URL(url).searchParams.get('id_token_hint')).toBe('id.token.sig');
     expect(returnUrl).toBe(REGISTERED_LOGOUT_REDIRECT_URI);
+  });
+
+  it('uses retained WSO2 end-session metadata without rediscovering the mail server', async () => {
+    await endProviderSession(SERVER, tokens({
+      tokenEndpoint: 'https://identity.example.org/oauth2/token',
+      issuer: 'https://identity.example.org/oauth2/token',
+      endSessionEndpoint: 'https://identity.example.org/oidc/logout',
+      logoutRedirectUri: 'ir.irisa.mail:/oauth/logout',
+    }));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(browser).toHaveBeenCalledTimes(1);
+    const [url, returnUrl] = browser.mock.calls[0] as [string, string];
+    expect(new URL(url).origin).toBe('https://identity.example.org');
+    expect(new URL(url).searchParams.get('post_logout_redirect_uri')).toBe('ir.irisa.mail:/oauth/logout');
+    expect(returnUrl).toBe('ir.irisa.mail:/oauth/logout');
+  });
+
+  it('revokes a WSO2 refresh token at the retained provider endpoint', async () => {
+    await revokeRefreshToken(SERVER, tokens({
+      tokenEndpoint: 'https://identity.example.org/oauth2/token',
+      revocationEndpoint: 'https://identity.example.org/oauth2/revoke',
+    }));
+    expect(fetchMock).toHaveBeenCalledWith('https://identity.example.org/oauth2/revoke', expect.objectContaining({
+      method: 'POST',
+    }));
   });
 
   it('opens nothing for sign-ins that left no browser session, or a provider without logout', async () => {
