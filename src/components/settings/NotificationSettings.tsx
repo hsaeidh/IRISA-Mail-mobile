@@ -379,10 +379,9 @@ export function NotificationSettings() {
           <>
             <SettingItem
               label={t('settings.notifications.push.transport_label', 'Delivery method')}
-              description={t(
-                'settings.notifications.push.transport_desc',
-                'How notifications reach this device: Google’s Firebase Cloud Messaging, or a UnifiedPush distributor app (such as ntfy) for Google-free delivery.',
-              )}
+              description={fcmSupported
+                ? t('settings.notifications.push.transport_desc', 'Choose the configured delivery method for this device.')
+                : t('settings.notifications.push.transport_desc_unified', 'Use a UnifiedPush distributor app for Google-free delivery.')}
             >
               <View style={styles.row}>
                 {fcmSupported && (
