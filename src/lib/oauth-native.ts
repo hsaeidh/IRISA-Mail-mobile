@@ -85,6 +85,12 @@ export async function discoverConfiguredOidcMetadata(issuer: string): Promise<OA
     if (endpoints.some((endpoint) => new URL(endpoint as string).origin !== issuerOrigin)) {
       throw new HandoffError('OIDC endpoints must be hosted on the configured issuer origin');
     }
+    for (const optionalEndpoint of [data.revocation_endpoint, data.end_session_endpoint]) {
+      if (optionalEndpoint !== undefined &&
+        (!isHttpsEndpoint(optionalEndpoint) || new URL(optionalEndpoint).origin !== issuerOrigin)) {
+        throw new HandoffError('OIDC revocation and logout endpoints must use HTTPS on the configured issuer origin');
+      }
+    }
     if (data.id_token_signing_alg_values_supported?.length &&
       !data.id_token_signing_alg_values_supported.includes('RS256')) {
       throw new HandoffError('The configured OIDC provider does not advertise RS256 ID-token signing');
@@ -173,6 +179,9 @@ async function verifyConfiguredIdToken(
     (!key.use || key.use === 'sig') && (!key.alg || key.alg === 'RS256') &&
     (!key.key_ops || key.key_ops.includes('verify')) && !!key.n && !!key.e);
   if (!jwk) throw new HandoffError('No matching RSA signing key was published by the OIDC provider');
+  if (decodeBase64Url(jwk.n!).byteLength < 256) {
+    throw new HandoffError('OIDC RSA signing key must be at least 2048 bits');
+  }
 
   const cryptoApi = (globalThis as { crypto?: Crypto }).crypto;
   if (!cryptoApi?.subtle) throw new HandoffError('Secure cryptographic verification is unavailable on this device');
