@@ -609,7 +609,10 @@ async function completeOAuthHandoff(
   opts?: SignInOptions,
 ): Promise<void> {
   await signIn(set, get, opts, async () => {
-    const { session, username, accountId } = await jmapClient.connectWithOAuth(result.serverUrl, result.tokens, undefined, opts?.jmapResourceOrigins);
+    const connected = opts?.jmapResourceOrigins !== undefined
+      ? await jmapClient.connectWithOAuth(result.serverUrl, result.tokens, undefined, opts.jmapResourceOrigins)
+      : await jmapClient.connectWithOAuth(result.serverUrl, result.tokens);
+    const { session, username, accountId } = connected;
     return { session, serverUrl: result.serverUrl.replace(/\/+$/, ''), username, accountId };
   });
 }
@@ -690,7 +693,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Adding an additional account keeps the live connection until the
       // new sign-in succeeded, so a typo doesn't kill the current session.
       await signIn(set, get, opts, async () => {
-        const session = await jmapClient.connect(serverUrl, username, password, opts?.totp, opts?.signal, opts?.jmapResourceOrigins);
+        const session = opts?.jmapResourceOrigins !== undefined
+          ? await jmapClient.connect(serverUrl, username, password, opts?.totp, opts?.signal, opts.jmapResourceOrigins)
+          : await jmapClient.connect(serverUrl, username, password, opts?.totp, opts?.signal);
         const base = serverUrl.replace(/\/+$/, '');
         return { session, serverUrl: base, username, accountId: generateAccountId(username, base) };
       });
@@ -725,7 +730,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       if (!token || /\s/.test(token)) throw new InvalidTokenError();
       await signIn(set, get, opts, async () => {
-        const { session, username, accountId } = await jmapClient.connectWithToken(base, token, opts?.jmapResourceOrigins);
+        const connected = opts?.jmapResourceOrigins !== undefined
+          ? await jmapClient.connectWithToken(base, token, opts.jmapResourceOrigins)
+          : await jmapClient.connectWithToken(base, token);
+        const { session, username, accountId } = connected;
         return { session, serverUrl: base, username, accountId };
       });
       set({ pendingTotpLogin: null });
